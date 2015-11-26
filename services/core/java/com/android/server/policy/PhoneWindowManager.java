@@ -738,6 +738,8 @@ public class PhoneWindowManager implements WindowManagerPolicy {
     private static final int MSG_POWER_DELAYED_PRESS = 13;
     private static final int MSG_POWER_LONG_PRESS = 14;
     private static final int MSG_UPDATE_DREAMING_SLEEP_TOKEN = 15;
+
+
     boolean mWifiDisplayConnected = false;
     int mWifiDisplayCustomRotation = -1;
 

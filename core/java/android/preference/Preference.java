@@ -1376,6 +1376,14 @@ public class Preference implements Comparable<Preference> {
     public void setDefaultValue(Object defaultValue) {
         mDefaultValue = defaultValue;
     }
+
+    /**
+     * Returns whether the preference can be found in persistent storage
+     * @hide
+     */
+    protected boolean isPersisted() {
+        return getSharedPreferences().contains(mKey);
+    }
     
     /**
      * Returns whether the preference can be found in persistent storage
