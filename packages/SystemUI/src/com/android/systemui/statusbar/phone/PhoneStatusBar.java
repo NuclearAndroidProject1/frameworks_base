@@ -348,7 +348,7 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
     // expanded notifications
     NotificationPanelView mNotificationPanel; // the sliding/resizing panel within the notification window
     View mExpandedContents;
-    TextView mNotificationPanelDebugText;
+    //TextView mNotificationPanelDebugText;
 
     TextView mLabel;
 
@@ -611,6 +611,13 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
             mContext.getContentResolver().registerContentObserver(Settings.System.getUriFor(
                     Settings.System.QS_TILE_COLUMNS),
                     false, this, UserHandle.USER_ALL);
+            mContext.getContentResolver().registerContentObserver(Settings.System.getUriFor(
+                    Settings.System.STATUS_BAR_HEADER_WEATHER),
+                    false, this, UserHandle.USER_ALL);
+            mContext.getContentResolver().registerContentObserver(Settings.System.getUriFor(
+                    Settings.System.STATUS_BAR_WEATHER_ICON_PACK),
+                    false, this, UserHandle.USER_ALL);
+
             update();
         }
 
@@ -632,6 +639,8 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
             if (mQSPanel != null) {
                 mQSPanel.updateSettings();
             }
+
+            mHeader.settingsChanged();
         }
     }
 
@@ -968,11 +977,11 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
         mNotificationPanel.setHeadsUpManager(mHeadsUpManager);
         mNotificationData.setHeadsUpManager(mHeadsUpManager);
 
-        if (MULTIUSER_DEBUG) {
+        /*if (MULTIUSER_DEBUG) {
             mNotificationPanelDebugText = (TextView) mNotificationPanel.findViewById(
                     R.id.header_debug_info);
             mNotificationPanelDebugText.setVisibility(View.VISIBLE);
-        }
+        }*/
 
         addGestureAnywhereView();
 
@@ -1494,6 +1503,11 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
     private void notifyNavigationBarScreenOn(boolean screenOn) {
         if (mNavigationBarView == null) return;
         mNavigationBarView.notifyScreenOn(screenOn);
+    }
+
+    private void notifyHeaderViewScreenOn(boolean screenOn) {
+        if (mHeader == null) return;
+        mHeader.notifyScreenOn(screenOn);
     }
 
     private WindowManager.LayoutParams getNavigationBarLayoutParams() {
@@ -3478,10 +3492,12 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
                 notifyHeadsUpScreenOff();
                 finishBarAnimations();
                 resetUserExpandedStates();
+                notifyHeaderViewScreenOn(false);
             }
             else if (Intent.ACTION_SCREEN_ON.equals(action)) {
                 mScreenOn = true;
                 notifyNavigationBarScreenOn(true);
+                notifyHeaderViewScreenOn(true);
             } else if ("com.android.systemui.TOGGLE_FLASHLIGHT".equals(action)) {
                 mFlashlightController.toggleFlashlight();
             }
@@ -3571,7 +3587,7 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
     @Override
     public void userSwitched(int newUserId) {
         super.userSwitched(newUserId);
-        if (MULTIUSER_DEBUG) mNotificationPanelDebugText.setText("USER " + newUserId);
+        //if (MULTIUSER_DEBUG) mNotificationPanelDebugText.setText("USER " + newUserId);
         animateCollapsePanels();
         updatePublicMode();
         updateNotifications();
