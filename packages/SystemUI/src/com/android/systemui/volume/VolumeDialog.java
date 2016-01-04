@@ -104,6 +104,7 @@ public class VolumeDialog {
     private final SpTexts mSpTexts;
     private final SparseBooleanArray mDynamic = new SparseBooleanArray();
     private final KeyguardManager mKeyguard;
+    private final AudioManager mAudioManager;
     private final int mExpandButtonAnimationDuration;
     private final ZenFooter mZenFooter;
     private final LayoutTransition mLayoutTransition;
@@ -135,6 +136,7 @@ public class VolumeDialog {
         mCallback = callback;
         mSpTexts = new SpTexts(mContext);
         mKeyguard = (KeyguardManager) context.getSystemService(Context.KEYGUARD_SERVICE);
+        mAudioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
 
         mDialog = new CustomDialog(mContext);
 
@@ -400,13 +402,16 @@ public class VolumeDialog {
                         if (hasVibrator) {
                             mController.setRingerMode(AudioManager.RINGER_MODE_VIBRATE, false);
                         } else {
-                            final boolean wasZero = row.ss.level == 0;
-                            mController.setStreamVolume(stream, wasZero ? row.lastAudibleLevel : 0);
+                            mController.setRingerMode(AudioManager.RINGER_MODE_SILENT, false);
                         }
+                    } else if (mState.ringerModeInternal == AudioManager.RINGER_MODE_VIBRATE) {
+                        mController.setRingerMode(AudioManager.RINGER_MODE_SILENT, false);
                     } else {
                         mController.setRingerMode(AudioManager.RINGER_MODE_NORMAL, false);
                         if (row.ss.level == 0) {
                             mController.setStreamVolume(stream, 1);
+                        } else {
+                            mController.setStreamVolume(stream, row.lastAudibleLevel);
                         }
                     }
                 } else {
@@ -636,7 +641,8 @@ public class VolumeDialog {
     private void updateFooterH() {
         if (D.BUG) Log.d(TAG, "updateFooterH");
         final boolean wasVisible = mZenFooter.getVisibility() == View.VISIBLE;
-        final boolean visible = mState.zenMode != Global.ZEN_MODE_OFF;
+        final boolean visible = mState.zenMode != Global.ZEN_MODE_OFF
+                && mAudioManager.isStreamAffectedByRingerMode(mActiveStream);
         if (wasVisible != visible && !visible) {
             prepareForCollapse();
         }
@@ -705,7 +711,8 @@ public class VolumeDialog {
         row.icon.setAlpha(iconEnabled ? 1 : 0.5f);
         final int iconRes =
                 isRingVibrate ? R.drawable.ic_volume_ringer_vibrate
-                : isRingSilent || zenMuted ? row.cachedIconRes
+                : isRingSilent ? R.drawable.ic_volume_ringer_mute
+                : zenMuted ? row.cachedIconRes
                 : ss.routedToBluetooth ?
                         (ss.muted ? R.drawable.ic_volume_media_bt_mute
                                 : R.drawable.ic_volume_media_bt)
@@ -729,7 +736,7 @@ public class VolumeDialog {
 
         // update slider
         final boolean enableSlider = !zenMuted;
-        final int vlevel = row.ss.muted && (isRingVibrate || !isRingStream && !zenMuted) ? 0
+        final int vlevel = row.ss.muted && (isRingSilent || isRingVibrate || !isRingStream && !zenMuted) ? 0
                 : row.ss.level;
         updateVolumeRowSliderH(row, enableSlider, vlevel);
     }

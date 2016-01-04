@@ -2355,7 +2355,13 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
      *                            1      PFLAG3_APPLYING_INSETS
      *                           1       PFLAG3_FITTING_SYSTEM_WINDOWS
      *                          1        PFLAG3_NESTED_SCROLLING_ENABLED
-     *                         1         PFLAG3_ASSIST_BLOCKED
+     *                         1         PFLAG3_SCROLL_INDICATOR_TOP
+     *                        1          PFLAG3_SCROLL_INDICATOR_BOTTOM
+     *                       1           PFLAG3_SCROLL_INDICATOR_LEFT
+     *                      1            PFLAG3_SCROLL_INDICATOR_RIGHT
+     *                     1             PFLAG3_SCROLL_INDICATOR_START
+     *                    1              PFLAG3_SCROLL_INDICATOR_END
+     *                   1               PFLAG3_ASSIST_BLOCKED
      * |-------|-------|-------|-------|
      */
 
@@ -2549,7 +2555,7 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
      * <p>Indicates that we are allowing {@link ViewStructure} to traverse
      * into this view.<p>
      */
-    static final int PFLAG3_ASSIST_BLOCKED = 0x100;
+    static final int PFLAG3_ASSIST_BLOCKED = 0x4000;
 
     /**
      * Always allow a user to over-scroll this view, provided it is a
@@ -9278,7 +9284,6 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
 
         final int actionMasked = event.getActionMasked();
         if (actionMasked == MotionEvent.ACTION_DOWN) {
-            android.util.SeempLog.record(3);
             // Defensive cleanup for new gesture
             stopNestedScroll();
         }
@@ -9823,7 +9828,6 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
      * @param event   The KeyEvent object that defines the button action.
      */
     public boolean onKeyDown(int keyCode, KeyEvent event) {
-        android.util.SeempLog.record(4);
         boolean result = false;
 
         if (KeyEvent.isConfirmKey(keyCode)) {
@@ -9868,7 +9872,6 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
      * @param event   The KeyEvent object that defines the button action.
      */
     public boolean onKeyUp(int keyCode, KeyEvent event) {
-        android.util.SeempLog.record(5);
         if (KeyEvent.isConfirmKey(keyCode)) {
             if ((mViewFlags & ENABLED_MASK) == DISABLED) {
                 return true;
@@ -10266,7 +10269,6 @@ public class View implements Drawable.Callback, KeyEvent.Callback,
      * @return True if the event was handled, false otherwise.
      */
     public boolean onTouchEvent(MotionEvent event) {
-        android.util.SeempLog.record(3);
         final float x = event.getX();
         final float y = event.getY();
         final int viewFlags = mViewFlags;

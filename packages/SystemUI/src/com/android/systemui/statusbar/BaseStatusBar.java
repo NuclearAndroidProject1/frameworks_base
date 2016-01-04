@@ -28,6 +28,7 @@ import android.app.TaskStackBuilder;
 import android.app.admin.DevicePolicyManager;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -90,6 +91,7 @@ import com.android.internal.statusbar.StatusBarIconList;
 import com.android.internal.util.NotificationColorUtil;
 import com.android.internal.widget.LockPatternUtils;
 import com.android.keyguard.KeyguardUpdateMonitor;
+import com.android.systemui.DejankUtils;
 import com.android.systemui.R;
 import com.android.systemui.RecentsComponent;
 import com.android.systemui.SwipeHelper;
@@ -167,13 +169,7 @@ public abstract class BaseStatusBar extends SystemUI implements
     // on-screen navigation buttons
     protected NavigationBarView mNavigationBarView = null;
 
-    protected Boolean mScreenOn;
-
-    // The second field is a bit different from the first one because it only listens to screen on/
-    // screen of events from Keyguard. We need this so we don't have a race condition with the
-    // broadcast. In the future, we should remove the first field altogether and rename the second
-    // field.
-    protected boolean mScreenOnFromKeyguard;
+    protected boolean mDeviceInteractive;
 
     protected boolean mVisible;
 
@@ -1097,26 +1093,6 @@ public abstract class BaseStatusBar extends SystemUI implements
 
     protected abstract View getStatusBarView();
 
-    protected View.OnTouchListener mRecentsPreloadOnTouchListener = new View.OnTouchListener() {
-        // additional optimization when we have software system buttons - start loading the recent
-        // tasks on touch down
-        @Override
-        public boolean onTouch(View v, MotionEvent event) {
-            int action = event.getAction() & MotionEvent.ACTION_MASK;
-            if (action == MotionEvent.ACTION_DOWN) {
-                preloadRecents();
-            } else if (action == MotionEvent.ACTION_CANCEL) {
-                cancelPreloadingRecents();
-            } else if (action == MotionEvent.ACTION_UP) {
-                if (!v.isPressed()) {
-                    cancelPreloadingRecents();
-                }
-
-            }
-            return false;
-        }
-    };
-
     /** Proxy for RecentsComponent */
 
     protected void showRecents(boolean triggeredFromAltTab) {
@@ -1495,6 +1471,59 @@ public abstract class BaseStatusBar extends SystemUI implements
         return true;
     }
 
+    public void startPendingIntentDismissingKeyguard(final PendingIntent intent) {
+        if (!isDeviceProvisioned()) return;
+
+        final boolean keyguardShowing = mStatusBarKeyguardViewManager.isShowing();
+        final boolean afterKeyguardGone = intent.isActivity()
+                && PreviewInflater.wouldLaunchResolverActivity(mContext, intent.getIntent(),
+                mCurrentUserId);
+        dismissKeyguardThenExecute(new OnDismissAction() {
+            public boolean onDismiss() {
+                new Thread() {
+                    @Override
+                    public void run() {
+                        try {
+                            if (keyguardShowing && !afterKeyguardGone) {
+                                ActivityManagerNative.getDefault()
+                                        .keyguardWaitingForActivityDrawn();
+                            }
+
+                            // The intent we are sending is for the application, which
+                            // won't have permission to immediately start an activity after
+                            // the user switches to home.  We know it is safe to do at this
+                            // point, so make sure new activity switches are now allowed.
+                            ActivityManagerNative.getDefault().resumeAppSwitches();
+                        } catch (RemoteException e) {
+                        }
+
+                        try {
+                            intent.send();
+                        } catch (PendingIntent.CanceledException e) {
+                            // the stack trace isn't very helpful here.
+                            // Just log the exception message.
+                            Log.w(TAG, "Sending intent failed: " + e);
+
+                            // TODO: Dismiss Keyguard.
+                        }
+                        if (intent.isActivity()) {
+                            mAssistManager.hideAssist();
+                            overrideActivityPendingAppTransition(keyguardShowing
+                                    && !afterKeyguardGone);
+                        }
+                    }
+                }.start();
+
+                // close the shade if it was open
+                animateCollapsePanels(CommandQueue.FLAG_EXCLUDE_RECENTS_PANEL,
+                        true /* force */, true /* delayed */);
+                visibilityChanged(false);
+
+                return true;
+            }
+        }, afterKeyguardGone);
+    }
+
     private final class NotificationClicker implements View.OnClickListener {
         public void onClick(final View v) {
             if (!(v instanceof ExpandableNotificationRow)) {
@@ -1511,6 +1540,15 @@ public abstract class BaseStatusBar extends SystemUI implements
 
             final PendingIntent intent = sbn.getNotification().contentIntent;
             final String notificationKey = sbn.getKey();
+
+            // Mark notification for one frame.
+            row.setJustClicked(true);
+            DejankUtils.postAfterTraversal(new Runnable() {
+                @Override
+                public void run() {
+                    row.setJustClicked(false);
+                }
+            });
 
             if (NOTIFICATION_CLICK_DEBUG) {
                 Log.d(TAG, "Clicked on content of " + notificationKey);
@@ -1619,7 +1657,7 @@ public abstract class BaseStatusBar extends SystemUI implements
 
     protected void updateVisibleToUser() {
         boolean oldVisibleToUser = mVisibleToUser;
-        mVisibleToUser = mVisible && mScreenOnFromKeyguard;
+        mVisibleToUser = mVisible && mDeviceInteractive;
 
         if (oldVisibleToUser != mVisibleToUser) {
             handleVisibleToUserChanged(mVisibleToUser);
@@ -1802,10 +1840,28 @@ public abstract class BaseStatusBar extends SystemUI implements
         mStackScroller.changeViewPosition(mEmptyShadeView, mStackScroller.getChildCount() - 2);
         mStackScroller.changeViewPosition(mKeyguardIconOverflowContainer,
                 mStackScroller.getChildCount() - 3);
+
+        if (onKeyguard) {
+            hideWeatherPanelIfNecessary(visibleNotifications, getMaxKeyguardNotifications());
+        }
+
     }
 
     private boolean shouldShowOnKeyguard(StatusBarNotification sbn) {
         return mShowLockscreenNotifications && !mNotificationData.isAmbient(sbn.getKey());
+    }
+
+    private void hideWeatherPanelIfNecessary(int visibleNotifications, int maxKeyguardNotifications) {
+        final ContentResolver resolver = mContext.getContentResolver();
+
+        int notifications = visibleNotifications;
+        if (mKeyguardIconOverflowContainer.getIconsView().getChildCount() > 0) {
+            notifications += 1;
+        }
+        Settings.System.putInt(resolver,
+                Settings.System.LOCK_SCREEN_VISIBLE_NOTIFICATIONS, notifications);
+        Settings.System.putInt(resolver,
+                Settings.System.LOCK_SCREEN_MAX_NOTIFICATIONS, maxKeyguardNotifications);
     }
 
     protected void setZenMode(int mode) {

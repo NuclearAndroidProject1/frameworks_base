@@ -298,6 +298,7 @@ public class WindowManagerService extends IWindowManager.Stub
     private static final String SYSTEM_SECURE = "ro.secure";
     private static final String SYSTEM_DEBUGGABLE = "ro.debuggable";
 
+    private static final String PERSIST_SYS_LCD_DENSITY = "persist.sys.lcd_density";
     private static final String DENSITY_OVERRIDE = "ro.config.density_override";
     private static final String SIZE_OVERRIDE = "ro.config.size_override";
 
@@ -3800,7 +3801,7 @@ public class WindowManagerService extends IWindowManager.Stub
     }
 
     public int getOrientationLocked() {
-        if (mDisplayFrozen) {
+        if (mDisplayFrozen || mAppsFreezingScreen > 0) {
             if (mLastWindowForcedOrientation != ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED) {
                 if (DEBUG_ORIENTATION) Slog.v(TAG, "Display is frozen, return "
                         + mLastWindowForcedOrientation);
@@ -3825,8 +3826,8 @@ public class WindowManagerService extends IWindowManager.Stub
                     continue;
                 }
                 int req = win.mAttrs.screenOrientation;
-                if((req == ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED) ||
-                        (req == ActivityInfo.SCREEN_ORIENTATION_BEHIND)){
+                if ((req == ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED) ||
+                        (req == ActivityInfo.SCREEN_ORIENTATION_BEHIND)) {
                     continue;
                 }
 
@@ -3856,7 +3857,7 @@ public class WindowManagerService extends IWindowManager.Stub
                 }
                 if (DEBUG_ORIENTATION) Slog.v(TAG,
                         "No one is requesting an orientation when the screen is locked");
-                return mLastKeyguardForcedOrientation;
+                return mLastWindowForcedOrientation = mLastKeyguardForcedOrientation;
             }
         }
 
@@ -5466,7 +5467,7 @@ public class WindowManagerService extends IWindowManager.Stub
 
     @Override
     public void keyguardGoingAway(boolean disableWindowAnimations,
-            boolean keyguardGoingToNotificationShade) {
+            boolean keyguardGoingToNotificationShade, boolean keyguardShowingMedia) {
         if (mContext.checkCallingOrSelfPermission(android.Manifest.permission.DISABLE_KEYGUARD)
                 != PackageManager.PERMISSION_GRANTED) {
             throw new SecurityException("Requires DISABLE_KEYGUARD permission");
@@ -5477,6 +5478,7 @@ public class WindowManagerService extends IWindowManager.Stub
             mAnimator.mKeyguardGoingAway = true;
             mAnimator.mKeyguardGoingAwayToNotificationShade = keyguardGoingToNotificationShade;
             mAnimator.mKeyguardGoingAwayDisableWindowAnimations = disableWindowAnimations;
+            mAnimator.mKeyguardGoingAwayShowingMedia = keyguardShowingMedia;
             requestTraversalLocked();
         }
     }
@@ -5671,6 +5673,18 @@ public class WindowManagerService extends IWindowManager.Stub
     @Override
     public void rebootSafeMode(boolean confirm) {
         ShutdownThread.rebootSafeMode(mContext, confirm);
+    }
+
+    // Called by window manager policy.  Not exposed externally.
+    @Override
+    public void reboot(String reason, boolean confirm) {
+        ShutdownThread.reboot(mContext, reason, confirm);
+    }
+
+    // Called by window manager policy.  Not exposed externally.
+    @Override
+    public void rebootCustom(String reason, boolean confirm) {
+        ShutdownThread.rebootCustom(mContext, reason, confirm);
     }
 
     public void setCurrentProfileIds(final int[] currentProfileIds) {
@@ -8558,6 +8572,9 @@ public class WindowManagerService extends IWindowManager.Stub
 
     @Override
     public int getInitialDisplayDensity(int displayId) {
+        if (displayId == Display.DEFAULT_DISPLAY) {
+            return DisplayMetrics.DENSITY_DEVICE_DEFAULT;
+        }
         synchronized (mWindowMap) {
             final DisplayContent displayContent = getDisplayContentLocked(displayId);
             if (displayContent != null && displayContent.hasAccess(Binder.getCallingUid())) {
@@ -8571,6 +8588,9 @@ public class WindowManagerService extends IWindowManager.Stub
 
     @Override
     public int getBaseDisplayDensity(int displayId) {
+        if (displayId == Display.DEFAULT_DISPLAY) {
+            return DisplayMetrics.DENSITY_PREFERRED;
+        }
         synchronized (mWindowMap) {
             final DisplayContent displayContent = getDisplayContentLocked(displayId);
             if (displayContent != null && displayContent.hasAccess(Binder.getCallingUid())) {
@@ -8598,6 +8618,7 @@ public class WindowManagerService extends IWindowManager.Stub
             synchronized(mWindowMap) {
                 final DisplayContent displayContent = getDisplayContentLocked(displayId);
                 if (displayContent != null) {
+                    SystemProperties.set(PERSIST_SYS_LCD_DENSITY, Integer.toString(density));
                     setForcedDisplayDensityLocked(displayContent, density);
                     Settings.Global.putString(mContext.getContentResolver(),
                             Settings.Global.DISPLAY_DENSITY_FORCED, Integer.toString(density));
@@ -8605,6 +8626,10 @@ public class WindowManagerService extends IWindowManager.Stub
             }
         } finally {
             Binder.restoreCallingIdentity(ident);
+        }
+        try {
+            ActivityManagerNative.getDefault().restart();
+        } catch (RemoteException e) {
         }
     }
 
@@ -8634,6 +8659,7 @@ public class WindowManagerService extends IWindowManager.Stub
             synchronized(mWindowMap) {
                 final DisplayContent displayContent = getDisplayContentLocked(displayId);
                 if (displayContent != null) {
+                    SystemProperties.set(PERSIST_SYS_LCD_DENSITY, null);
                     setForcedDisplayDensityLocked(displayContent,
                             displayContent.mInitialDisplayDensity);
                     Settings.Global.putString(mContext.getContentResolver(),
@@ -8642,6 +8668,10 @@ public class WindowManagerService extends IWindowManager.Stub
             }
         } finally {
             Binder.restoreCallingIdentity(ident);
+        }
+        try {
+            ActivityManagerNative.getDefault().restart();
+        } catch (RemoteException e) {
         }
     }
 
@@ -10421,8 +10451,8 @@ public class WindowManagerService extends IWindowManager.Stub
                     ": removed=" + win.mRemoved + " visible=" + win.isVisibleLw() +
                     " mHasSurface=" + win.mHasSurface +
                     " drawState=" + win.mWinAnimator.mDrawState);
-            if (win.mRemoved || !win.mHasSurface) {
-                // Window has been removed; no draw will now happen, so stop waiting.
+            if (win.mRemoved || !win.mHasSurface || !win.mPolicyVisibility) {
+                // Window has been removed or hidden; no draw will now happen, so stop waiting.
                 if (DEBUG_SCREEN_ON) Slog.w(TAG, "Aborted waiting for drawn: " + win);
                 mWaitingForDrawn.remove(win);
             } else if (win.hasDrawnLw()) {
@@ -11965,12 +11995,18 @@ public class WindowManagerService extends IWindowManager.Stub
                 final WindowList windows = getDefaultWindowListLocked();
                 for (int winNdx = windows.size() - 1; winNdx >= 0; --winNdx) {
                     final WindowState win = windows.get(winNdx);
+                    final boolean isForceHiding = mPolicy.isForceHiding(win.mAttrs);
                     if (win.isVisibleLw()
-                            && (win.mAppToken != null || mPolicy.isForceHiding(win.mAttrs))) {
+                            && (win.mAppToken != null || isForceHiding)) {
                         win.mWinAnimator.mDrawState = WindowStateAnimator.DRAW_PENDING;
                         // Force add to mResizingWindows.
                         win.mLastContentInsets.set(-1, -1, -1, -1);
                         mWaitingForDrawn.add(win);
+
+                        // No need to wait for the windows below Keyguard.
+                        if (isForceHiding) {
+                            break;
+                        }
                     }
                 }
                 requestTraversalLocked();

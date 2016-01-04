@@ -25,18 +25,20 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.res.Resources;
 import android.os.Bundle;
 import android.os.SystemClock;
 import android.os.UserHandle;
+import android.provider.Settings;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewStub;
 import android.widget.Toast;
 
-import com.android.internal.logging.MetricsConstants;
 import com.android.internal.logging.MetricsLogger;
 import com.android.systemui.Prefs;
 import com.android.systemui.R;
+import com.android.systemui.recents.RecentsConfiguration;
 import com.android.systemui.recents.misc.Console;
 import com.android.systemui.recents.misc.DebugTrigger;
 import com.android.systemui.recents.misc.ReferenceCountedTrigger;
@@ -130,7 +132,7 @@ public class RecentsActivity extends Activity implements RecentsView.RecentsView
     /**
      * Broadcast receiver to handle messages from AlternateRecentsComponent.
      */
-    final BroadcastReceiver mServiceBroadcastReceiver = new BroadcastReceiver() {
+    private final BroadcastReceiver mServiceBroadcastReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
@@ -160,7 +162,7 @@ public class RecentsActivity extends Activity implements RecentsView.RecentsView
     /**
      * Broadcast receiver to handle messages from the system
      */
-    final BroadcastReceiver mSystemBroadcastReceiver = new BroadcastReceiver() {
+    private final BroadcastReceiver mSystemBroadcastReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             String action = intent.getAction();
@@ -179,7 +181,7 @@ public class RecentsActivity extends Activity implements RecentsView.RecentsView
     /**
      * A custom debug trigger to listen for a debug key chord.
      */
-    final DebugTrigger mDebugTrigger = new DebugTrigger(new Runnable() {
+    private final DebugTrigger mDebugTrigger = new DebugTrigger(new Runnable() {
         @Override
         public void run() {
             onDebugModeTriggered();
@@ -223,6 +225,7 @@ public class RecentsActivity extends Activity implements RecentsView.RecentsView
                         R.anim.recents_to_launcher_enter,
                     mConfig.launchedFromSearchHome ? R.anim.recents_to_search_launcher_exit :
                         R.anim.recents_to_launcher_exit));
+        setFullScreen();
 
         // Mark the task that is the launch target
         int taskStackCount = stacks.size();
@@ -254,10 +257,28 @@ public class RecentsActivity extends Activity implements RecentsView.RecentsView
             if (mEmptyView != null) {
                 mEmptyView.setVisibility(View.GONE);
             }
+
+            boolean showSearchBar = Settings.System.getInt(getContentResolver(),
+                       Settings.System.RECENTS_SHOW_SEARCH_BAR, 1) == 1;
+
             if (mRecentsView.hasValidSearchBar()) {
-                mRecentsView.setSearchBarVisibility(View.VISIBLE);
+                if (showSearchBar) {
+                    mRecentsView.setSearchBarVisibility(View.VISIBLE);
+                } else {
+                    mRecentsView.setSearchBarVisibility(View.GONE);
+                }
             } else {
-                refreshSearchWidgetView();
+                if (showSearchBar) {
+                    refreshSearchWidgetView();
+                }
+            }
+
+            // Update search bar space height
+            if (showSearchBar) {
+                mConfig.searchBarSpaceHeightPx = getResources().getDimensionPixelSize(
+                    R.dimen.recents_search_bar_space_height);
+            } else {
+                mConfig.searchBarSpaceHeightPx = 0;
             }
         }
 
@@ -591,6 +612,18 @@ public class RecentsActivity extends Activity implements RecentsView.RecentsView
         }
     }
 
+    private void setFullScreen() {
+       if (Settings.System.getInt(getContentResolver(),
+           Settings.System.RECENTS_FULL_SCREEN, 0) == 1) {
+        getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                | View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN
+                | View.SYSTEM_UI_FLAG_HIDE_NAVIGATION
+                | View.SYSTEM_UI_FLAG_FULLSCREEN
+                | View.SYSTEM_UI_FLAG_IMMERSIVE_STICKY);
+        } else {
+        // do nothing at all for now
+        }
+    }
 
     /**** RecentsResizeTaskDialog ****/
 

@@ -442,6 +442,8 @@ public interface WindowManagerPolicy {
 
         public void shutdown(boolean confirm);
         public void rebootSafeMode(boolean confirm);
+        public void reboot(String reason, boolean confirm);
+        public void rebootCustom(String reason, boolean confirm);
 
         /**
          * Return the window manager lock needed to correctly call "Lw" methods.
@@ -778,7 +780,8 @@ public interface WindowManagerPolicy {
      * Create and return an animation to let the wallpaper disappear after being shown on a force
      * hiding window.
      */
-    public Animation createForceHideWallpaperExitAnimation(boolean goingToNotificationShade);
+    public Animation createForceHideWallpaperExitAnimation(boolean goingToNotificationShade,
+            boolean keyguardShowingMedia);
 
     /**
      * Called from the input reader thread before a key is enqueued.
@@ -1161,6 +1164,11 @@ public interface WindowManagerPolicy {
      * user can start interacting with it.
      */
     public void systemBooted();
+
+    /**
+     * name of package being worked on during boot time message
+     */
+    public void setPackageName(String pkgName);
 
     /**
      * Show boot time message to the user.

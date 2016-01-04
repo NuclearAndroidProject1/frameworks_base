@@ -895,6 +895,13 @@ public class Notification implements Parcelable
     private Icon mLargeIcon;
 
     /**
+     * Used by light picker in Settings to force
+     * notification lights on when screen is on
+     * @hide
+     */
+    public static final String EXTRA_FORCE_SHOW_LIGHTS = "android.forceShowLights";
+
+    /**
      * Structure to encapsulate a named action that can be shown as part of this notification.
      * It must include an icon, a label, and a {@link PendingIntent} to be fired when the action is
      * selected by the user.
@@ -3963,13 +3970,18 @@ public class Notification implements Parcelable
             return this;
         }
 
+        /** @hide */
+        public static final int MIN_ASHMEM_BITMAP_SIZE = 128 * (1 << 10);
+
         /**
          * @hide
          */
         @Override
         public void purgeResources() {
             super.purgeResources();
-            if (mPicture != null && mPicture.isMutable()) {
+            if (mPicture != null &&
+                mPicture.isMutable() &&
+                mPicture.getAllocationByteCount() >= MIN_ASHMEM_BITMAP_SIZE) {
                 mPicture = mPicture.createAshmemBitmap();
             }
             if (mBigLargeIcon != null) {

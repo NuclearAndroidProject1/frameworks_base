@@ -66,7 +66,6 @@ import android.service.voice.IVoiceInteractionSession;
 import android.util.EventLog;
 import android.util.Slog;
 import android.view.Display;
-import android.util.BoostFramework;
 import com.android.internal.app.ActivityTrigger;
 
 import java.io.FileDescriptor;
@@ -153,10 +152,6 @@ final class ActivityStack {
     final WindowManagerService mWindowManager;
     private final RecentTasks mRecentTasks;
 
-    public BoostFramework mPerf = null;
-    public boolean mIsAnimationBoostEnabled = false;
-    public int aBoostTimeOut = 0;
-    public int aBoostParamVal[];
     /**
      * The back history of all previous (and possibly still
      * running) activities.  It contains #TaskRecord objects.
@@ -370,14 +365,6 @@ final class ActivityStack {
         mCurrentUser = mService.mCurrentUserId;
         mRecentTasks = recentTasks;
         mOverrideConfig = Configuration.EMPTY;
-        mIsAnimationBoostEnabled = mService.mContext.getResources().getBoolean(
-                   com.android.internal.R.bool.config_enablePerfBoostForAnimation);
-        if (mIsAnimationBoostEnabled) {
-           aBoostTimeOut = mService.mContext.getResources().getInteger(
-                   com.android.internal.R.integer.animationboost_timeout_param);
-           aBoostParamVal = mService.mContext.getResources().getIntArray(
-                   com.android.internal.R.array.animationboost_param_value);
-        }
     }
 
     boolean okToShowLocked(ActivityRecord r) {
@@ -957,10 +944,13 @@ final class ActivityStack {
                         r.userId, System.identityHashCode(r), r.shortComponentName,
                         mPausingActivity != null
                             ? mPausingActivity.shortComponentName : "(none)");
-                if (r.finishing && r.state == ActivityState.PAUSING) {
-                    if (DEBUG_PAUSE) Slog.v(TAG,
-                            "Executing finish of failed to pause activity: " + r);
-                    finishCurrentActivityLocked(r, FINISH_AFTER_VISIBLE, false);
+                if (r.state == ActivityState.PAUSING) {
+                    r.state = ActivityState.PAUSED;
+                    if (r.finishing) {
+                        if (DEBUG_PAUSE) Slog.v(TAG,
+                                "Executing finish of failed to pause activity: " + r);
+                        finishCurrentActivityLocked(r, FINISH_AFTER_VISIBLE, false);
+                    }
                 }
             }
         }
@@ -1821,9 +1811,6 @@ final class ActivityStack {
         // that the previous one will be hidden soon.  This way it can know
         // to ignore it when computing the desired screen orientation.
         boolean anim = true;
-        if (mIsAnimationBoostEnabled == true && mPerf == null) {
-            mPerf = new BoostFramework();
-        }
         if (prev != null) {
             if (prev.finishing) {
                 if (DEBUG_TRANSITION) Slog.v(TAG_TRANSITION,
@@ -1835,9 +1822,6 @@ final class ActivityStack {
                     mWindowManager.prepareAppTransition(prev.task == next.task
                             ? AppTransition.TRANSIT_ACTIVITY_CLOSE
                             : AppTransition.TRANSIT_TASK_CLOSE, false);
-                    if(prev.task != next.task && mPerf != null) {
-                       mPerf.perfLockAcquire(aBoostTimeOut, aBoostParamVal);
-                    }
                 }
                 mWindowManager.setAppWillBeHidden(prev.appToken);
                 mWindowManager.setAppVisibility(prev.appToken, false);
@@ -1853,9 +1837,6 @@ final class ActivityStack {
                             : next.mLaunchTaskBehind
                                     ? AppTransition.TRANSIT_TASK_OPEN_BEHIND
                                     : AppTransition.TRANSIT_TASK_OPEN, false);
-                    if(prev.task != next.task && mPerf != null) {
-                        mPerf.perfLockAcquire(aBoostTimeOut, aBoostParamVal);
-                    }
                 }
             }
             if (false) {
@@ -2648,7 +2629,23 @@ final class ActivityStack {
             final String myReason = reason + " adjustFocus";
             if (next != r) {
                 final TaskRecord task = r.task;
-                if (r.frontOfTask && task == topTask() && task.isOverHomeStack()) {
+                boolean adjust = false;
+                if ((next == null || next.task != task) && r.frontOfTask) {
+                    if (task.isOverHomeStack() && task == topTask()) {
+                        adjust = true;
+                    } else {
+                        for (int taskNdx = mTaskHistory.size() - 1; taskNdx >= 0; --taskNdx) {
+                            final TaskRecord tr = mTaskHistory.get(taskNdx);
+                            if (tr.getTopActivity() != null) {
+                                break;
+                            } else if (tr.isOverHomeStack()) {
+                                adjust = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+                if (adjust) {
                     // For non-fullscreen stack, we want to move the focus to the next visible
                     // stack to prevent the home screen from moving to the top and obscuring
                     // other visible stacks.

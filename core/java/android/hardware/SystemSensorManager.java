@@ -78,14 +78,14 @@ public class SystemSensorManager extends SensorManager {
                 sSensorModuleInitialized = true;
                 nativeClassInit();
             }
-        }
 
-        // initialize the sensor list
-        for (int index = 0;;++index) {
-            Sensor sensor = new Sensor();
-            if (!nativeGetSensorAtIndex(mNativeInstance, sensor, index)) break;
-            mFullSensorsList.add(sensor);
-            mHandleToSensor.append(sensor.getHandle(), sensor);
+            // initialize the sensor list
+            for (int index = 0;;++index) {
+                Sensor sensor = new Sensor();
+                if (!nativeGetSensorAtIndex(mNativeInstance, sensor, index)) break;
+                mFullSensorsList.add(sensor);
+                mHandleToSensor.append(sensor.getHandle(), sensor);
+            }
         }
     }
 
@@ -101,7 +101,6 @@ public class SystemSensorManager extends SensorManager {
     @Override
     protected boolean registerListenerImpl(SensorEventListener listener, Sensor sensor,
             int delayUs, Handler handler, int maxBatchReportLatencyUs, int reservedFlags) {
-        android.util.SeempLog.record_sensor_rate(381, sensor, delayUs);
         if (listener == null || sensor == null) {
             Log.e(TAG, "sensor or listener is null");
             return false;
@@ -143,7 +142,6 @@ public class SystemSensorManager extends SensorManager {
     /** @hide */
     @Override
     protected void unregisterListenerImpl(SensorEventListener listener, Sensor sensor) {
-        android.util.SeempLog.record_sensor(382, sensor);
         // Trigger Sensors should use the cancelTriggerSensor call.
         if (sensor != null && sensor.getReportingMode() == Sensor.REPORTING_MODE_ONE_SHOT) {
             return;

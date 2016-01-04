@@ -147,6 +147,8 @@ public final class CachedBluetoothDevice implements Comparable<CachedBluetoothDe
         } else if (profile instanceof MapProfile &&
                 newProfileState == BluetoothProfile.STATE_DISCONNECTED) {
             profile.setPreferred(mDevice, false);
+            mProfiles.remove(profile);
+            mRemovedProfiles.add(profile);
         } else if (mLocalNapRoleConnected && profile instanceof PanProfile &&
                 ((PanProfile) profile).isLocalRoleNap(mDevice) &&
                 newProfileState == BluetoothProfile.STATE_DISCONNECTED) {
@@ -561,10 +563,10 @@ public final class CachedBluetoothDevice implements Comparable<CachedBluetoothDe
          * Otherwise, allow the connect on UUID change.
          */
         if (!mProfiles.isEmpty()
-                && ((mConnectAttempted + timeout) > SystemClock.elapsedRealtime()
-                || (mConnectAttempted == 0))) {
+                && ((mConnectAttempted + timeout) > SystemClock.elapsedRealtime())) {
             connectWithoutResettingTimer(false);
         }
+
         dispatchAttributesChanged();
     }
 

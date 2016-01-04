@@ -38,10 +38,13 @@ import android.os.Binder;
 import android.os.Build;
 import android.os.Environment;
 import android.os.FileUtils;
+import android.os.IBinder;
 import android.os.Handler;
 import android.os.Message;
 import android.os.PatternMatcher;
 import android.os.Process;
+import android.os.RemoteException;
+import android.os.ServiceManager;
 import android.os.SystemClock;
 import android.os.UserHandle;
 import android.os.UserManager;
@@ -514,7 +517,18 @@ final class Settings {
         ArrayList<String> removeStage = new ArrayList<String>();
         for (Map.Entry<String,SharedUserSetting> entry : mSharedUsers.entrySet()) {
             final SharedUserSetting sus = entry.getValue();
-            if (sus == null || sus.packages.size() == 0) {
+            if (sus == null) {
+                removeStage.add(entry.getKey());
+                continue;
+            }
+            // remove packages that are no longer installed
+            for (Iterator<PackageSetting> iter = sus.packages.iterator(); iter.hasNext();) {
+                PackageSetting ps = iter.next();
+                if (mPackages.get(ps.name) == null) {
+                    iter.remove();
+                }
+            }
+            if (sus.packages.size() == 0) {
                 removeStage.add(entry.getKey());
             }
         }
@@ -2959,6 +2973,11 @@ final class Settings {
             for (int i=0; i<ri.size(); i++) {
                 ActivityInfo ai = ri.get(i).activityInfo;
                 set[i] = new ComponentName(ai.packageName, ai.name);
+                // We have already discovered the best third party match,
+                // so we only need to finish filling set with all results.
+                if (haveNonSys != null) {
+                    continue;
+                }
                 if ((ai.applicationInfo.flags&ApplicationInfo.FLAG_SYSTEM) == 0) {
                     if (ri.get(i).match >= thirdPartyMatch) {
                         // Keep track of the best match we find of all third
@@ -2967,7 +2986,6 @@ final class Settings {
                         if (PackageManagerService.DEBUG_PREFERRED) Log.d(TAG, "Result "
                                 + ai.packageName + "/" + ai.name + ": non-system!");
                         haveNonSys = set[i];
-                        break;
                     }
                 } else if (cn.getPackageName().equals(ai.packageName)
                         && cn.getClassName().equals(ai.name)) {
@@ -3858,6 +3876,57 @@ final class Settings {
             return true;
         }
         return false;
+    }
+
+    void removeStalePermissions() {
+        /*
+         * Remove any permission that is not currently declared by any package
+         */
+        List<BasePermission> permissionsToRemove = new ArrayList<>();
+        for (BasePermission basePerm : mPermissions.values()) {
+            // Ignore permissions declared by the system
+            if (basePerm.sourcePackage.equals("android") ||
+                    basePerm.sourcePackage.equals("cyanogenmod.platform")) {
+                continue;
+            }
+            // Ignore permissions other than NORMAL (ignore DYNAMIC and BUILTIN), like the
+            // ones based on permission-trees
+            if (basePerm.type != BasePermission.TYPE_NORMAL) {
+                continue;
+            }
+
+            if (!mPackages.containsKey(basePerm.sourcePackage)) {
+                // Package doesn't exist
+                permissionsToRemove.add(basePerm);
+                continue;
+            }
+            PackageSetting pkgSettings = mPackages.get(basePerm.sourcePackage);
+            if (pkgSettings.pkg == null || pkgSettings.pkg.permissions == null) {
+                // Package doesn't declare permissions
+                permissionsToRemove.add(basePerm);
+                continue;
+            }
+            boolean found = false;
+            for (PackageParser.Permission perm : pkgSettings.pkg.permissions) {
+                if (perm.info.name != null && basePerm.name.equals(perm.info.name)) {
+                    // The original package still declares the permission
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                // The original package doesn't currently declare the permission
+                permissionsToRemove.add(basePerm);
+            }
+        }
+        // And now remove all stale permissions
+        for (BasePermission basePerm : permissionsToRemove) {
+            String msg = "Removed stale permission: " + basePerm.name + " originally " +
+                    "assigned to " + basePerm.sourcePackage + "\n";
+            mReadMessages.append(msg);
+            PackageManagerService.reportSettingsProblem(Log.WARN, msg);
+            mPermissions.remove(basePerm.name);
+        }
     }
 
     List<UserInfo> getAllUsers() {

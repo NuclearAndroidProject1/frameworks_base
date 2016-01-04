@@ -47,6 +47,7 @@ import static com.android.server.NetworkManagementSocketTagger.PROP_QTAGUID_ENAB
 import android.annotation.NonNull;
 import android.app.ActivityManagerNative;
 import android.content.Context;
+import android.content.res.Resources;
 import android.net.ConnectivityManager;
 import android.net.INetworkManagementEventObserver;
 import android.net.InterfaceConfiguration;
@@ -1518,6 +1519,10 @@ public class NetworkManagementService extends INetworkManagementService.Stub
             WifiConfiguration wifiConfig, String wlanIface) {
         mContext.enforceCallingOrSelfPermission(CONNECTIVITY_INTERNAL, TAG);
         try {
+            if (mContext.getResources().getBoolean(
+                        com.android.internal.R.bool.config_wifiApFirmwareReload)) {
+                wifiFirmwareReload(wlanIface, "AP");
+            }
             if (wifiConfig == null) {
                 mConnector.execute("softap", "set", wlanIface);
             } else {
@@ -2055,9 +2060,9 @@ public class NetworkManagementService extends INetworkManagementService.Stub
     public void setFirewallChainEnabled(int chain, boolean enable) {
         enforceSystemUid();
         synchronized (mQuotaLock) {
-            if (mFirewallChainStates.indexOfKey(chain) >= 0 &&
-                    mFirewallChainStates.get(chain) == enable) {
-                // All is the same, nothing to do.
+            if (mFirewallChainStates.get(chain, false) == enable) {
+                // All is the same, nothing to do.  This relies on the fact that netd has child
+                // chains default detached.
                 return;
             }
             mFirewallChainStates.put(chain, enable);
