@@ -1998,8 +1998,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
             return;
         }
         mDisplay = display;
-        mPanelOrientation =
-            SystemProperties.getInt("persist.panel.orientation", 0) / 90;
+
         final Resources res = mContext.getResources();
         int shortSize, longSize;
         if (width > height) {
@@ -3105,19 +3104,6 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                     + repeatCount + " keyguardOn=" + keyguardOn + " mHomePressed=" + mHomePressed
                     + " canceled=" + canceled + " virtualKey=" + virtualKey + " scanCode=" + scanCode
                     + " longPress=" + longPress);
-        }
-
-        // If the boot mode is power off alarm, we should not dispatch the several physical keys
-        // in power off alarm UI to avoid pausing power off alarm UI.
-        int isPowerOffAlarmMode = Settings.System.getInt(mContext.getContentResolver(),
-                Settings.System.POWER_OFF_ALARM_MODE, 0);
-        if (DEBUG_INPUT) { Log.d(TAG, "intercept Dispatching isPowerOffAlarmMode = " +
-                isPowerOffAlarmMode); }
-
-        if (isPowerOffAlarmMode == 1 && (keyCode == KeyEvent.KEYCODE_HOME
-                || keyCode == KeyEvent.KEYCODE_SEARCH
-                || keyCode == KeyEvent.KEYCODE_MENU)) {
-            return -1;  // ignore the physical key here
         }
 
         // If the boot mode is power off alarm, we should not dispatch the several physical keys
@@ -6732,7 +6718,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                     if (preferredRotation >= 0) {
                         return preferredRotation;
                     }
-                    return mPanelOrientation;
+                    return Surface.ROTATION_0;
             }
         }
     }

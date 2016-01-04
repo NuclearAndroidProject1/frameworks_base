@@ -48,13 +48,9 @@ static const clockid_t android_alarm_to_clockid[] = {
     CLOCK_BOOTTIME_ALARM,
     CLOCK_BOOTTIME,
     CLOCK_MONOTONIC,
-<<<<<<< HEAD
-    CLOCK_POWEROFF_ALARM,
-=======
 #ifdef WITH_TIMERFD_POWEROFF_ALARM
     CLOCK_POWEROFF_ALARM,
 #endif
->>>>>>> fae35425ee74a6a02cd7a2783a4457b9d055b87f
     CLOCK_REALTIME,
 };
 static const size_t N_ANDROID_TIMERFDS = sizeof(android_alarm_to_clockid)/sizeof(clockid_t);

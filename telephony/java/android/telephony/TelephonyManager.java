@@ -2142,7 +2142,6 @@ public class TelephonyManager {
      */
     /** {@hide} */
     public String getLine1NumberForSubscriber(int subId) {
-        android.util.SeempLog.record_str(9, ""+subId);
         String number = null;
         try {
             ITelephony telephony = getITelephony();
