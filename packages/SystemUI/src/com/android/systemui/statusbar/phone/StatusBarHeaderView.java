@@ -74,7 +74,7 @@ import java.text.NumberFormat;
  */
 public class StatusBarHeaderView extends RelativeLayout implements View.OnClickListener,
         BatteryController.BatteryStateChangeCallback, NextAlarmController.NextAlarmChangeCallback, EmergencyListener,
-        StatusBarHeaderMachine.IStatusBarHeaderMachineObserver {
+        StatusBarHeaderMachine.IStatusBarHeaderMachineObserver, View.OnLongClickListener {
     static final String TAG = "StatusBarHeaderView";
 
     private boolean mExpanded;
@@ -171,6 +171,7 @@ public class StatusBarHeaderView extends RelativeLayout implements View.OnClickL
         mSettingsButton = (SettingsButton) findViewById(R.id.settings_button);
         mSettingsContainer = findViewById(R.id.settings_button_container);
         mSettingsButton.setOnClickListener(this);
+        mSettingsButton.setOnLongClickListener(this);
         mQsDetailHeader = findViewById(R.id.qs_detail_header);
         mQsDetailHeader.setAlpha(0);
         mQsDetailHeaderTitle = (TextView) mQsDetailHeader.findViewById(android.R.id.title);
@@ -363,7 +364,7 @@ public class StatusBarHeaderView extends RelativeLayout implements View.OnClickL
         mEmergencyCallsOnly.setVisibility(mExpanded && mShowEmergencyCallsOnly ? VISIBLE : GONE);
         mBatteryLevel.setVisibility(mExpanded ? View.VISIBLE : View.GONE);
         mSettingsContainer.findViewById(R.id.tuner_icon).setVisibility(
-                TunerService.isTunerEnabled(mContext) ? View.VISIBLE : View.INVISIBLE);
+                TunerService.isTunerEnabled(mContext) ? View.INVISIBLE : View.INVISIBLE);
     }
 
     private void updateSignalClusterDetachment() {
@@ -542,20 +543,6 @@ public class StatusBarHeaderView extends RelativeLayout implements View.OnClickL
     @Override
     public void onClick(View v) {
         if (v == mSettingsButton) {
-            if (mSettingsButton.isTunerClick()) {
-                if (TunerService.isTunerEnabled(mContext)) {
-                    TunerService.showResetRequest(mContext, new Runnable() {
-                        @Override
-                        public void run() {
-                            // Relaunch settings so that the tuner disappears.
-                            startSettingsActivity();
-                        }
-                    });
-                } else {
-                    Toast.makeText(getContext(), R.string.tuner_toast, Toast.LENGTH_LONG).show();
-                    TunerService.setTunerEnabled(mContext, true);
-                }
-            }
             startSettingsActivity();
         } else if (v == mSystemIconsSuperContainer) {
             startBatteryActivity();
@@ -569,6 +556,21 @@ public class StatusBarHeaderView extends RelativeLayout implements View.OnClickL
         } else if (v == mDateGroup) {
             startDateActivity();
         }
+    }
+
+    @Override
+    public boolean onLongClick(View v) {
+	if (v == mSettingsButton){
+			startSettingsLongClickActivity();
+		}
+		return false;
+	}
+
+	private void startSettingsLongClickActivity() {
+		Intent intent = new Intent(Intent.ACTION_MAIN);
+		intent.setClassName("com.android.settings",
+            "com.android.settings.Settings$MainSettingsActivity");
+        mActivityStarter.startActivity(intent, true);
     }
 
     private void startSettingsActivity() {
