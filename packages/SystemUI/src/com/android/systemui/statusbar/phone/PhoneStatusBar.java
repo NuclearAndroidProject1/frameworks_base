@@ -45,6 +45,7 @@ import android.database.ContentObserver;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.ColorFilter;
+import android.graphics.PorterDuff.Mode;
 import android.graphics.PixelFormat;
 import android.graphics.Point;
 import android.graphics.PointF;
@@ -79,6 +80,7 @@ import android.provider.Settings;
 import android.service.notification.NotificationListenerService;
 import android.service.notification.NotificationListenerService.RankingMap;
 import android.service.notification.StatusBarNotification;
+import android.text.TextUtils;
 import android.util.ArraySet;
 import android.util.DisplayMetrics;
 import android.util.EventLog;
@@ -107,6 +109,7 @@ import android.view.animation.LinearInterpolator;
 import android.view.animation.PathInterpolator;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -170,6 +173,7 @@ import com.android.systemui.statusbar.policy.SecurityControllerImpl;
 import com.android.systemui.statusbar.policy.UserInfoController;
 import com.android.systemui.statusbar.policy.UserSwitcherController;
 import com.android.systemui.statusbar.policy.ZenModeController;
+import com.android.systemui.statusbar.policy.Clock;
 import com.android.systemui.statusbar.stack.NotificationStackScrollLayout;
 import com.android.systemui.statusbar.stack.NotificationStackScrollLayout.OnChildLocationsChangedListener;
 import com.android.systemui.statusbar.stack.StackStateAnimator;
@@ -326,8 +330,19 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
     View mExpandedContents;
     TextView mNotificationPanelDebugText;
 
+    TextView mLabel;
+
     // settings
     private QSPanel mQSPanel;
+
+    String mGreeting = "";
+    private boolean mShowLabel;
+    private int mShowLabelTimeout;
+
+    // logo
+    private boolean mLogo;
+    private ImageView Logo;
+    private int mLogoColor;
 
     // top bar
     StatusBarHeaderView mHeader;
@@ -422,6 +437,18 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
                     Settings.System.STATUS_BAR_BRIGHTNESS_CONTROL), false, this);
             resolver.registerContentObserver(Settings.System.getUriFor(
                     Settings.System.SCREEN_BRIGHTNESS_MODE), false, this);
+            resolver.registerContentObserver(Settings.System.getUriFor(
+                    Settings.System.STATUS_BAR_LOGO),
+                    false, this, UserHandle.USER_ALL);
+            resolver.registerContentObserver(Settings.System.getUriFor(
+                    Settings.System.STATUS_BAR_LOGO_COLOR),
+                    false, this, UserHandle.USER_ALL);
+            resolver.registerContentObserver(Settings.System.getUriFor(
+                    Settings.System.STATUS_BAR_GREETING),
+                    false, this, UserHandle.USER_ALL);
+            resolver.registerContentObserver(Settings.System.getUriFor(
+                    Settings.System.STATUS_BAR_GREETING_TIMEOUT),
+                    false, this, UserHandle.USER_ALL);
             update();
         }
 
@@ -437,6 +464,21 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
                     Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC;
             mBrightnessControl = !autoBrightness && Settings.System.getInt(
                     resolver, Settings.System.STATUS_BAR_BRIGHTNESS_CONTROL, 0) == 1;
+
+            mLogo = Settings.System.getIntForUser(resolver,
+                    Settings.System.STATUS_BAR_LOGO, 0, mCurrentUserId) == 1;
+            mLogoColor = Settings.System.getIntForUser(resolver,
+                    Settings.System.STATUS_BAR_LOGO_COLOR, 0xFFFFFFFF, mCurrentUserId);
+            showLogo(mLogo, mLogoColor);
+
+            mGreeting = Settings.System.getStringForUser(resolver,
+                    Settings.System.STATUS_BAR_GREETING,
+                    UserHandle.USER_CURRENT);
+            if (mGreeting != null && !TextUtils.isEmpty(mGreeting)) {
+                mLabel.setText(mGreeting);
+           }
+            mShowLabelTimeout = Settings.System.getIntForUser(resolver,
+                    Settings.System.STATUS_BAR_GREETING_TIMEOUT, 400, mCurrentUserId);
         }
     }
 
@@ -886,6 +928,8 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
 
         // figure out which pixel-format to use for the status bar.
         mPixelFormat = PixelFormat.OPAQUE;
+
+        mLabel = (TextView)mStatusBarView.findViewById(R.id.custom_label);
 
         mStackScroller = (NotificationStackScrollLayout) mStatusBarWindow.findViewById(
                 R.id.notification_stack_scroller);
@@ -2037,8 +2081,8 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
     /**
      * State is one or more of the DISABLE constants from StatusBarManager.
      */
-    public void disable(int state1, int state2, boolean animate) {
-        animate &= mStatusBarWindowState != WINDOW_STATE_HIDDEN;
+    public void disable(int state1, int state2, final boolean animate) {
+        //animate &= mStatusBarWindowState != WINDOW_STATE_HIDDEN;
         mDisabledUnmodified1 = state1;
         mDisabledUnmodified2 = state2;
         state1 = adjustDisableFlags(state1);
@@ -2087,7 +2131,28 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
             if ((state1 & StatusBarManager.DISABLE_SYSTEM_INFO) != 0) {
                 mIconController.hideSystemIconArea(animate);
             } else {
-                mIconController.showSystemIconArea(animate);
+                if (mGreeting != null && !TextUtils.isEmpty(mGreeting) && mShowLabel) {
+                    if (animate) {
+                        mLabel.setVisibility(View.VISIBLE);
+                        mLabel.animate().cancel();
+                        mLabel.animate()
+                                .alpha(1f)
+                                .setDuration(mShowLabelTimeout)
+                                .setInterpolator(ALPHA_IN)
+                                .setStartDelay(50)
+                                .withEndAction(new Runnable() {
+                            @Override
+                            public void run() {
+                                labelAnimatorFadeOut(animate);
+                            }
+                        });
+                    } else {
+                        labelAnimatorFadeOut(animate);
+                    }
+                    mShowLabel = false;
+                } else {
+                    mIconController.showSystemIconArea(animate);
+               }
             }
         }
 
@@ -2132,6 +2197,22 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
         if ((diff2 & StatusBarManager.DISABLE2_QUICK_SETTINGS) != 0) {
             updateQsExpansionEnabled();
         }
+    }
+
+    protected void labelAnimatorFadeOut(final boolean animate) {
+        mLabel.animate().cancel();
+        mLabel.animate()
+                .alpha(0f)
+                .setDuration(200)
+                .setStartDelay(1200)
+                .setInterpolator(ALPHA_OUT)
+                .withEndAction(new Runnable() {
+            @Override
+            public void run() {
+                mLabel.setVisibility(View.GONE);
+                mIconController.showSystemIconArea(animate);
+            }
+        });
     }
 
     @Override
@@ -3229,6 +3310,7 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
             }
             else if (Intent.ACTION_SCREEN_OFF.equals(action)) {
                 mScreenOn = false;
+                mShowLabel = true;
                 notifyNavigationBarScreenOn(false);
                 notifyHeadsUpScreenOff();
                 finishBarAnimations();
@@ -3268,6 +3350,16 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
             }
         }
     };
+
+    public void showLogo(boolean show, int color) {
+        if (mStatusBarView == null) return;
+        ContentResolver resolver = mContext.getContentResolver();
+        Logo = (ImageView) mStatusBarView.findViewById(R.id.logo);
+        Logo.setColorFilter(color, Mode.SRC_IN);
+        if (Logo != null) {
+            Logo.setVisibility(show ? (mLogo ? View.VISIBLE : View.GONE) : View.GONE);
+        }
+    }
 
     private void resetUserExpandedStates() {
         ArrayList<Entry> activeNotifications = mNotificationData.getActiveNotifications();
