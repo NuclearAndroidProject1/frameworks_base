@@ -44,9 +44,6 @@ public class TunerFragment extends PreferenceFragment {
 
     private static final int MENU_REMOVE = Menu.FIRST + 1;
 
-    private final SettingObserver mSettingObserver = new SettingObserver();
-
-    private SwitchPreference mBatteryPct;
 
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
