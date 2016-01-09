@@ -125,8 +125,15 @@ public class RecentHeader extends CardHeader {
         }
         int defaultCardText = mContext.getResources().getColor(
                 R.color.card_text_color_header);
+        int textColor = Settings.System.getIntForUser( mContext.getContentResolver(),
+                Settings.System.RECENT_CARD_TEXT_COLOR,
+                defaultCardText, UserHandle.USER_CURRENT);
         holder.textView.setText(mLabel);
-        holder.textView.setTextColor(getDefaultTextColor());
+        if (textColor != 0x00ffffff) {
+            holder.textView.setTextColor(textColor);
+        } else {
+            holder.textView.setTextColor(getDefaultTextColor());
+        }
     }
 
     public int getDefaultTextColor() {
