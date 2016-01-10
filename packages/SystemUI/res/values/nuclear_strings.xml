@@ -17,6 +17,9 @@
  */
 -->
 <resources xmlns:xliff="urn:oasis:names:tc:xliff:document:1.2">
+
+	<!-- OnTheSpot: Title of the performance app feature for the reset dialog. [CHAR LIMIT=NONE] -->
+    <string name="performance_app">Performance APP</string>
 <!-- Greeting -->
     <string name="welcome_label">Hello world!</string>
 
@@ -30,5 +33,9 @@
     <string name="accessibility_quick_settings_heads_up_changed_off">Heads up turned off.</string>
     <!-- Announcement made when heads up changes to on (not shown on the screen). [CHAR LIMIT=NONE] -->
     <string name="accessibility_quick_settings_heads_up_changed_on">Heads up turned on.</string>
+
+    <!-- The text for the button in the notification window-shade that clears
+         all of the currently visible notifications. [CHAR LIMIT=10]-->
+    <string name="clear_recents">Close all recent</string>
 
 </resources>

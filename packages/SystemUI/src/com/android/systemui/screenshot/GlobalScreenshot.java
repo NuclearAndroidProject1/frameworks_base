@@ -56,6 +56,7 @@ import android.view.ViewGroup;
 import android.view.WindowManager;
 import android.view.animation.Interpolator;
 import android.widget.ImageView;
+import android.provider.Settings;
 
 import com.android.systemui.R;
 
@@ -426,6 +427,8 @@ class GlobalScreenshot {
     private float mBgPadding;
     private float mBgPaddingScale;
 
+    private int mScreenshotSound;
+
     private AsyncTask<SaveImageInBackgroundData, Void, SaveImageInBackgroundData> mSaveInBgTask;
 
     private MediaActionSound mCameraSound;
@@ -619,8 +622,11 @@ class GlobalScreenshot {
         mScreenshotLayout.post(new Runnable() {
             @Override
             public void run() {
+            	mScreenshotSound = Settings.System.getInt(mContext.getContentResolver(), Settings.System.SCREENSHOT_SOUNDS, 2);
                 // Play the shutter sound to notify that we've taken a screenshot
-                mCameraSound.play(MediaActionSound.SHUTTER_CLICK);
+                if (mScreenshotSound==2){
+                    mCameraSound.play(MediaActionSound.SHUTTER_CLICK);
+                }
 
                 mScreenshotView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
                 mScreenshotView.buildLayer();
