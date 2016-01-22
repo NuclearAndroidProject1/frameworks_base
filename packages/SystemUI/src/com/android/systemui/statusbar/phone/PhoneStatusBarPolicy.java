@@ -32,6 +32,7 @@ import android.os.IRemoteCallback;
 import android.os.RemoteException;
 import android.os.UserHandle;
 import android.os.UserManager;
+import android.provider.Settings;
 import android.provider.Settings.Global;
 import android.telecom.TelecomManager;
 import android.util.Log;
@@ -151,12 +152,15 @@ public class PhoneStatusBarPolicy implements Callback {
         // bluetooth status
         updateBluetooth();
 
+        //Update initial tty mode
+        updateTTYMode();
+
         // Alarm clock
         mService.setIcon(SLOT_ALARM_CLOCK, R.drawable.stat_sys_alarm, 0, null);
         mService.setIconVisibility(SLOT_ALARM_CLOCK, false);
 
         // zen
-        mService.setIcon(SLOT_ZEN, R.drawable.stat_sys_zen_important, 0, null);
+        mService.setIcon(SLOT_ZEN, R.drawable.stat_sys_dnd_important, 0, null);
         mService.setIconVisibility(SLOT_ZEN, false);
 
         // volume
@@ -223,12 +227,14 @@ public class PhoneStatusBarPolicy implements Callback {
         }
     }
 
+
     private final void updateVolumeZen() {
         AudioManager audioManager = (AudioManager) mContext.getSystemService(Context.AUDIO_SERVICE);
 
         boolean zenVisible = false;
         int zenIconId = 0;
         String zenDescription = null;
+        boolean zenModeNoInterruptions = false;
 
         boolean volumeVisible = false;
         int volumeIconId = 0;
@@ -236,16 +242,26 @@ public class PhoneStatusBarPolicy implements Callback {
 
         if (DndTile.isVisible(mContext) || DndTile.isCombinedIcon(mContext)) {
             zenVisible = mZen != Global.ZEN_MODE_OFF;
-            zenIconId = mZen == Global.ZEN_MODE_NO_INTERRUPTIONS
-                    ? R.drawable.stat_sys_dnd_total_silence : R.drawable.stat_sys_dnd;
+            if (mZen == Global.ZEN_MODE_NO_INTERRUPTIONS) {
+                zenIconId = R.drawable.stat_sys_dnd_total_silence;
+            } else if (mZen == Global.ZEN_MODE_IMPORTANT_INTERRUPTIONS) {
+                zenIconId = R.drawable.stat_sys_dnd_important;
+            } else  {
+                zenIconId = R.drawable.stat_sys_dnd;
+            }
             zenDescription = mContext.getString(R.string.quick_settings_dnd_label);
+        } else if (mZen == Global.ZEN_MODE_ALARMS) {
+            zenVisible = true;
+            zenIconId = R.drawable.stat_sys_dnd;
+            zenDescription = mContext.getString(R.string.interruption_level_alarms);
         } else if (mZen == Global.ZEN_MODE_NO_INTERRUPTIONS) {
             zenVisible = true;
-            zenIconId = R.drawable.stat_sys_zen_none;
+            zenModeNoInterruptions = true;
+            zenIconId = R.drawable.stat_sys_dnd_total_silence;
             zenDescription = mContext.getString(R.string.interruption_level_none);
         } else if (mZen == Global.ZEN_MODE_IMPORTANT_INTERRUPTIONS) {
             zenVisible = true;
-            zenIconId = R.drawable.stat_sys_zen_important;
+            zenIconId = R.drawable.stat_sys_dnd_important;
             zenDescription = mContext.getString(R.string.interruption_level_priority);
         }
 
@@ -272,6 +288,10 @@ public class PhoneStatusBarPolicy implements Callback {
         if (zenVisible != mZenVisible) {
             mService.setIconVisibility(SLOT_ZEN, zenVisible);
             mZenVisible = zenVisible;
+        }
+        // overrules volume icon
+        if (zenModeNoInterruptions) {
+            volumeVisible = false;
         }
 
         if (volumeVisible) {
@@ -327,6 +347,29 @@ public class PhoneStatusBarPolicy implements Callback {
         } else {
             // TTY is off
             if (DEBUG) Log.v(TAG, "updateTTY: set TTY off");
+            mService.setIconVisibility(SLOT_TTY, false);
+        }
+    }
+
+    private boolean isWiredHeadsetOn() {
+        AudioManager audioManager = (AudioManager) mContext.getSystemService(Context.AUDIO_SERVICE);
+        return audioManager.isWiredHeadsetOn();
+    }
+
+    private final void updateTTYMode() {
+        int ttyMode = Settings.Secure.getInt(mContext.getContentResolver(),
+                Settings.Secure.PREFERRED_TTY_MODE, TelecomManager.TTY_MODE_OFF);
+        boolean enabled = ttyMode != TelecomManager.TTY_MODE_OFF;
+        if (DEBUG) Log.v(TAG, "updateTTYMode: enabled: " + enabled);
+        if (enabled && isWiredHeadsetOn()) {
+            // TTY is on
+            if (DEBUG) Log.v(TAG, "updateTTYMode: set TTY on");
+            mService.setIcon(SLOT_TTY, R.drawable.stat_sys_tty_mode, 0,
+                    mContext.getString(R.string.accessibility_tty_enabled));
+            mService.setIconVisibility(SLOT_TTY, true);
+        } else {
+            // TTY is off
+            if (DEBUG) Log.v(TAG, "updateTTYMode: set TTY off");
             mService.setIconVisibility(SLOT_TTY, false);
         }
     }

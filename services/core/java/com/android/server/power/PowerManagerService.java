@@ -187,6 +187,8 @@ public final class PowerManagerService extends SystemService
 
     private final Object mLock = new Object();
 
+    private TelephonyManager mTelephonyManager;
+
     // A bitfield that indicates what parts of the power state have
     // changed and need to be recalculated.
     private int mDirty;

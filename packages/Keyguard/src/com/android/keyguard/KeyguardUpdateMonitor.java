@@ -136,6 +136,7 @@ public class KeyguardUpdateMonitor implements TrustManager.TrustListener {
     private static final int MSG_SERVICE_STATE_CHANGE = 330;
     private static final int MSG_SCREEN_TURNED_ON = 331;
     private static final int MSG_SCREEN_TURNED_OFF = 332;
+    private static final int MSG_LOCALE_CHANGED = 500;
 
     /** Fingerprint state: Not listening to fingerprint. */
     private static final int FINGERPRINT_STATE_STOPPED = 0;
@@ -273,6 +274,9 @@ public class KeyguardUpdateMonitor implements TrustManager.TrustListener {
                     break;
                 case MSG_SCREEN_TURNED_OFF:
                     handleScreenTurnedOff();
+                    break;
+                case MSG_LOCALE_CHANGED:
+                    handleLocaleChanged();
                     break;
             }
         }
@@ -784,6 +788,9 @@ public class KeyguardUpdateMonitor implements TrustManager.TrustListener {
                 // This is required because telephony doesn't return to "READY" after
                 // these state transitions. See bug 7197471.
                 state = IccCardConstants.State.READY;
+            } else if (IccCardConstants.INTENT_VALUE_ICC_NOT_READY.equals(stateExtra)
+                    && TelephonyManager.getDefault().isMultiSimEnabled()) {
+                state = IccCardConstants.State.NOT_READY;
             } else {
                 state = IccCardConstants.State.UNKNOWN;
             }

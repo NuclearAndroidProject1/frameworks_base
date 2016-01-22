@@ -65,6 +65,12 @@ public class CarrierText extends TextView {
         public void onStartedWakingUp() {
             setSelected(true);
         };
+
+        public void onSimStateChanged(int subId, int slotId, IccCardConstants.State simState) {
+            if (getStatusForIccState(simState) == StatusMode.SimIoError) {
+                updateCarrierText();
+            }
+        };
     };
     /**
      * The status of this lock screen. Primarily used for widgets on LockScreen.
@@ -240,6 +246,8 @@ public class CarrierText extends TextView {
             case SimNotReady:
                 // Null is reserved for denoting missing, in this case we have nothing to display.
                 carrierText = ""; // nothing to display yet.
+                if (TelephonyManager.getDefault().isMultiSimEnabled())
+                    carrierText = text;
                 break;
 
             case NetworkLocked:
@@ -394,5 +402,18 @@ public class CarrierText extends TextView {
 
             return source;
         }
+    }
+
+    private String networkClassToString (int networkClass) {
+        final int[] classIds =
+            {com.android.internal.R.string.config_rat_unknown, // TelephonyManager.NETWORK_CLASS_UNKNOWN
+            com.android.internal.R.string.config_rat_2g,
+            com.android.internal.R.string.config_rat_3g,
+            com.android.internal.R.string.config_rat_4g };
+        String classString = null;
+        if (networkClass < classIds.length) {
+            classString = getContext().getResources().getString(classIds[networkClass]);
+        }
+        return (classString == null) ? "" : classString;
     }
 }
