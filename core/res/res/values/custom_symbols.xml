@@ -48,6 +48,12 @@
   <java-symbol type="drawable" name="ic_global_lock" />
   <java-symbol type="drawable" name="ic_global_settings" />
   <java-symbol type="drawable" name="ic_global_voice_search" />
+  <java-symbol type="drawable" name="ic_global_dnd_off" />
+  <java-symbol type="drawable" name="ic_global_dnd_total_silence" />
+  <java-symbol type="drawable" name="ic_global_dnd_alarms" />
+  <java-symbol type="drawable" name="ic_global_dnd_important" />
+  <java-symbol type="id" name="option4" />
+  <java-symbol type="layout" name="global_actions_dnd_mode" />
 
   <java-symbol type="dimen" name="max_avatar_size" />
 
@@ -74,4 +80,19 @@
   <java-symbol type="bool" name="config_invert_colors_on_doze" />
 
   <java-symbol type="bool" name="config_enableScreenrecordChord" />
+  <!-- Automatic brightness enhancements -->
+  <java-symbol type="integer" name="config_autoBrightnessBrighteningLightFastDebounce"/>
+  <!-- Proximity check on screen on -->
+  <java-symbol type="bool" name="config_proximityCheckOnWake" />
+
+  <!-- Proximity check timeout -->
+  <java-symbol type="integer" name="config_proximityCheckTimeout" />
+
+  <!-- Proximity check on screen on default -->
+  <java-symbol type="bool" name="config_proximityCheckOnWakeEnabledByDefault" />
+
+  <java-symbol type="bool" name="config_multiColorBatteryLed" />
+  <java-symbol type="bool" name="config_wifiApFirmwareReload" />
+  <java-symbol type="array" name="notification_light_package_mapping" />
+  <java-symbol type="bool" name="config_multiColorNotificationLed" />
 </resources>

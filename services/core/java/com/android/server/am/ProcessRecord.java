@@ -432,6 +432,17 @@ final class ProcessRecord {
     }
 
     public void makeActive(IApplicationThread _thread, ProcessStatsService tracker) {
+        String seempStr = "app_uid=" + uid
+                            + ",app_pid=" + pid + ",oom_adj=" + curAdj
+                            + ",setAdj=" + setAdj + ",hasShownUi=" + (hasShownUi ? 1 : 0)
+                            + ",cached=" + (cached ? 1 : 0)
+                            + ",fA=" + (foregroundActivities ? 1 : 0)
+                            + ",fS=" + (foregroundServices ? 1 : 0)
+                            + ",systemNoUi=" + (systemNoUi ? 1 : 0)
+                            + ",curSchedGroup=" + curSchedGroup
+                            + ",curProcState=" + curProcState + ",setProcState=" + setProcState
+                            + ",killed=" + (killed ? 1 : 0) + ",killedByAm=" + (killedByAm ? 1 : 0)
+                            + ",debugging=" + (debugging ? 1 : 0);
         if (thread == null) {
             final ProcessStats.ProcessState origBase = baseProcessTracker;
             if (origBase != null) {
@@ -458,6 +469,17 @@ final class ProcessRecord {
     }
 
     public void makeInactive(ProcessStatsService tracker) {
+        String seempStr = "app_uid=" + uid
+                            + ",app_pid=" + pid + ",oom_adj=" + curAdj
+                            + ",setAdj=" + setAdj + ",hasShownUi=" + (hasShownUi ? 1 : 0)
+                            + ",cached=" + (cached ? 1 : 0)
+                            + ",fA=" + (foregroundActivities ? 1 : 0)
+                            + ",fS=" + (foregroundServices ? 1 : 0)
+                            + ",systemNoUi=" + (systemNoUi ? 1 : 0)
+                            + ",curSchedGroup=" + curSchedGroup
+                            + ",curProcState=" + curProcState + ",setProcState=" + setProcState
+                            + ",killed=" + (killed ? 1 : 0) + ",killedByAm=" + (killedByAm ? 1 : 0)
+                            + ",debugging=" + (debugging ? 1 : 0);
         thread = null;
         final ProcessStats.ProcessState origBase = baseProcessTracker;
         if (origBase != null) {

@@ -5675,18 +5675,6 @@ public class PhoneWindowManager implements WindowManagerPolicy {
             }
         }
 
-        // Specific device key handling
-        if (mDeviceKeyHandler != null) {
-            try {
-                // The device only should consume known keys.
-                if (mDeviceKeyHandler.handleKeyEvent(event)) {
-                    return 0;
-                }
-            } catch (Exception e) {
-                Slog.w(TAG, "Could not dispatch event to device key handler", e);
-            }
-        }
-
         // Handle special keys.
         switch (keyCode) {
             case KeyEvent.KEYCODE_VOLUME_DOWN:
@@ -7105,9 +7093,14 @@ public class PhoneWindowManager implements WindowManagerPolicy {
 
     private void applyLidSwitchState() {
         if (mLidState == LID_CLOSED && mLidControlsSleep) {
-            mPowerManager.goToSleep(SystemClock.uptimeMillis(),
-                    PowerManager.GO_TO_SLEEP_REASON_LID_SWITCH,
-                    PowerManager.GO_TO_SLEEP_FLAG_NO_DOZE);
+            TelecomManager telephonyService = getTelecommService();
+            if (!(telephonyService == null
+                    || telephonyService.isRinging())) {
+                mPowerManager.goToSleep(SystemClock.uptimeMillis(),
+                        PowerManager.GO_TO_SLEEP_REASON_LID_SWITCH,
+                        PowerManager.GO_TO_SLEEP_FLAG_NO_DOZE);
+            }
+
         }
 
         synchronized (mLock) {

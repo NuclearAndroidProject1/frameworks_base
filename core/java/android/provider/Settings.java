@@ -3666,6 +3666,13 @@ public final class Settings {
         public static final String KEY_APP_SWITCH_LONG_PRESS_ACTION = "key_app_switch_long_press_action";
 
         /**
+         * Should the alarm be shown in fullscreen instead of heads-up
+         *
+         * @hide
+        */
+        public static final String SHOW_ALARM_FULLSCREEN = "show_alarm_fullscreen";
+
+        /**
          *  Enable statusbar double tap gesture on to put device to sleep
          * @hide
          */
@@ -3938,13 +3945,6 @@ public final class Settings {
          * @hide
          */
         public static final String SCREENSHOT_SOUNDS = "screenshot_sounds";
-
-        /**
-         * Should the alarm be shown in fullscreen instead of heads-up
-         *
-         * @hide
-         */
-        public static final String SHOW_ALARM_FULLSCREEN = "show_alarm_fullscreen";
 
         /**  
          * AOKP Custom System Animations
@@ -4270,6 +4270,7 @@ public final class Settings {
             PUBLIC_SETTINGS.add(DTMF_TONE_WHEN_DIALING);
             PUBLIC_SETTINGS.add(SOUND_EFFECTS_ENABLED);
             PUBLIC_SETTINGS.add(HAPTIC_FEEDBACK_ENABLED);
+            PUBLIC_SETTINGS.add(SHOW_ALARM_FULLSCREEN);
             PUBLIC_SETTINGS.add(SHOW_WEB_SUGGESTIONS);
             PUBLIC_SETTINGS.add(POWER_OFF_ALARM_MODE);
         }
@@ -8450,6 +8451,12 @@ public final class Settings {
          * Control whether the process CPU usage meter should be shown.
          */
         public static final String SHOW_PROCESSES = "show_processes";
+
+        /**
+         * Control whether the process CPU info meter should be shown.
+         * @hide
+         */
+        public static final String SHOW_CPU = "show_cpu";
 
         /**
          * If 1 low power mode is enabled.

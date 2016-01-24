@@ -5152,10 +5152,6 @@ public final class ActivityManagerService extends ActivityManagerNative
                     newTracesPath = tracesPath + "_" + app.processName;
 
                 traceRenameFile.renameTo(new File(newTracesPath));
-                Process.sendSignal(app.pid, 6);
-                SystemClock.sleep(1000);
-                Process.sendSignal(app.pid, 6);
-                SystemClock.sleep(1000);
             }
 
             // Bring up the infamous App Not Responding dialog
@@ -18783,6 +18779,17 @@ public final class ActivityManagerService extends ActivityManagerNative
         boolean success = true;
 
         if (app.curRawAdj != app.setRawAdj) {
+            String seempStr = "app_uid=" + app.uid
+                + ",app_pid=" + app.pid + ",oom_adj=" + app.curAdj
+                + ",setAdj=" + app.setAdj + ",hasShownUi=" + (app.hasShownUi ? 1 : 0)
+                + ",cached=" + (app.cached ? 1 : 0)
+                + ",fA=" + (app.foregroundActivities ? 1 : 0)
+                + ",fS=" + (app.foregroundServices ? 1 : 0)
+                + ",systemNoUi=" + (app.systemNoUi ? 1 : 0)
+                + ",curSchedGroup=" + app.curSchedGroup
+                + ",curProcState=" + app.curProcState + ",setProcState=" + app.setProcState
+                + ",killed=" + (app.killed ? 1 : 0) + ",killedByAm=" + (app.killedByAm ? 1 : 0)
+                + ",debugging=" + (app.debugging ? 1 : 0);
             app.setRawAdj = app.curRawAdj;
         }
 

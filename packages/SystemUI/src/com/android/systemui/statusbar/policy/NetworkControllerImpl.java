@@ -39,6 +39,8 @@ import android.telephony.TelephonyManager;
 import android.text.TextUtils;
 import android.util.Log;
 import android.util.MathUtils;
+import android.view.View;
+import android.widget.TextView;
 
 import com.android.internal.annotations.VisibleForTesting;
 import com.android.internal.telephony.PhoneConstants;
@@ -115,6 +117,8 @@ public class NetworkControllerImpl extends BroadcastReceiver
 
     // The current user ID.
     private int mCurrentUserId;
+
+    private TextView mNetWorkNameLabelView;
 
     private OnSubscriptionsChangedListener mSubscriptionListener;
 
@@ -600,6 +604,39 @@ public class NetworkControllerImpl extends BroadcastReceiver
         mEthernetSignalController.updateConnectivity(mConnectedTransports, mValidatedTransports);
     }
 
+    private void setTextViewVisibility(TextView v) {
+        String networkName = getMobileDataNetworkName();
+        if (networkName.equals(mContext.getString(
+                com.android.internal.R.string.lockscreen_carrier_default))
+                || networkName.equals(mContext.getString(
+                com.android.internal.R.string.emergency_calls_only))) {
+            v.setVisibility(View.GONE);
+        } else {
+            v.setVisibility(View.VISIBLE);
+        }
+    }
+
+    public void addNetworkLabelView(TextView v) {
+        if (v != null) {
+            mNetWorkNameLabelView = v;
+            mNetWorkNameLabelView.setText(getMobileDataNetworkName());
+            setTextViewVisibility(mNetWorkNameLabelView);
+        }
+    }
+
+    public void removeNetworkLabelView() {
+        if (mNetWorkNameLabelView != null) {
+            mNetWorkNameLabelView = null;
+        }
+    }
+
+    public void updateNetworkLabelView() {
+        if (mNetWorkNameLabelView != null) {
+            mNetWorkNameLabelView.setText(getMobileDataNetworkName());
+            setTextViewVisibility(mNetWorkNameLabelView);
+        }
+    }
+
     public void dump(FileDescriptor fd, PrintWriter pw, String[] args) {
         pw.println("NetworkController state:");
 
@@ -782,7 +819,7 @@ public class NetworkControllerImpl extends BroadcastReceiver
 
     private SubscriptionInfo addSignalController(int id, int simSlotIndex) {
         SubscriptionInfo info = new SubscriptionInfo(id, "", simSlotIndex, "", "", 0, 0, "", 0,
-                null, 0, 0, "", 0);
+                null, 0, 0, "");
         mMobileSignalControllers.put(id, new MobileSignalController(mContext,
                 mConfig, mHasMobileDataFeature, mPhone, mCallbackHandler, this, info,
                 mSubDefaults, mReceiverHandler.getLooper()));
@@ -827,7 +864,10 @@ public class NetworkControllerImpl extends BroadcastReceiver
         boolean alwaysShowCdmaRssi = false;
         boolean show4gForLte = false;
         boolean hspaDataDistinguishable;
+        boolean readIconsFromXml;
         boolean showRsrpSignalLevelforLTE;
+        boolean showLocale;
+        boolean showRat;
 
         static Config readConfig(Context context) {
             Config config = new Config();
@@ -839,8 +879,14 @@ public class NetworkControllerImpl extends BroadcastReceiver
             config.show4gForLte = res.getBoolean(R.bool.config_show4GForLTE);
             config.hspaDataDistinguishable =
                     res.getBoolean(R.bool.config_hspa_data_distinguishable);
+            config.readIconsFromXml = res.getBoolean(R.bool.config_read_icons_from_xml);
             config.showRsrpSignalLevelforLTE =
                     res.getBoolean(R.bool.config_showRsrpSignalLevelforLTE);
+            config.showLocale =
+                    res.getBoolean(com.android.internal.R.bool.config_monitor_locale_change);
+            config.showRat =
+                    res.getBoolean(com.android.internal.R.bool.config_display_rat);
+
             return config;
         }
     }

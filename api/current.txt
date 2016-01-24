@@ -1778,7 +1778,7 @@ package android {
     field public static final int test_list_item = 17367052; // 0x109000c
     field public static final int two_line_list_item = 17367053; // 0x109000d
     field public static final int slider_preference = 17367064; // 0x01090018
-   }
+  }
 
   public static final class R.menu {
     ctor public R.menu();
