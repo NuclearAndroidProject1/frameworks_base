@@ -82,7 +82,6 @@ import android.service.notification.NotificationListenerService;
 import android.service.notification.NotificationListenerService.RankingMap;
 import android.service.notification.StatusBarNotification;
 import android.text.TextUtils;
-import android.telephony.TelephonyManager;
 import android.util.ArraySet;
 import android.util.DisplayMetrics;
 import android.util.EventLog;
@@ -268,13 +267,6 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
     /** Allow some time inbetween the long press for back and recents. */
     private static final int LOCK_TO_APP_GESTURE_TOLERENCE = 200;
 
-    /**
-     * A key that is used to retrieve the value of the checkbox
-     * in Settings application that allows a user to add or remove
-     * the operator name in statusbar.
-     */
-    protected static final String SHOW_OPERATOR_NAME = "show_network_name_mode";
-
     /** If true, the system is in the half-boot-to-decryption-screen state.
      * Prudently disable QS and notifications.  */
     private static final boolean ONLY_CORE_APPS;
@@ -336,8 +328,6 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
     Object mQueueLock = new Object();
 
     StatusBarIconController mIconController;
-
-    private View mCarrierText = null;
 
     // expanded notifications
     NotificationPanelView mNotificationPanel; // the sliding/resizing panel within the notification window
@@ -594,22 +584,6 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
     }
 
     private OmniSettingsObserver mOmniSettingsObserver = new OmniSettingsObserver(mHandler);
-    private final ContentObserver mShowOperatorNameObserver = new ContentObserver(new Handler()) {
-        @Override
-        public void onChange(boolean selfChange) {
-            boolean showOperatorName = (0 != Settings.System.getInt(
-                mContext.getContentResolver(), SHOW_OPERATOR_NAME, 1));
-            TextView networkLabel = (TextView)mStatusBarWindow.findViewById(R.id.network_label);
-            if (networkLabel != null) {
-                if (!showOperatorName || mState != StatusBarState.SHADE) {
-                    mNetworkController.removeNetworkLabelView();
-                    networkLabel.setVisibility(View.GONE);
-                } else {
-                    mNetworkController.addNetworkLabelView(networkLabel);
-                }
-            }
-        }
-    };
 
     private int mInteractingWindows;
     private boolean mAutohideSuspended;
@@ -833,22 +807,6 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
         // TODO: use MediaSessionManager.SessionListener to hook us up to future updates
         // in session state
 
-        // If the phone is configured to show the operator name
-        // then register the observer.
-        // Phones without simcard should not show
-        // operatorname in statusbar.
-        final TelephonyManager tm = (TelephonyManager)mContext.getSystemService(Context.
-                TELEPHONY_SERVICE);
-        final boolean enableOperatorName = (mContext.getResources().
-                getBoolean(com.android.internal.R.bool.config_showOperatorNameInStatusBar));
-        if (enableOperatorName) {
-            mContext.getContentResolver().unregisterContentObserver(mShowOperatorNameObserver);
-            mShowOperatorNameObserver.onChange(false); // setup
-            mContext.getContentResolver().registerContentObserver(
-                    Settings.System.getUriFor(SHOW_OPERATOR_NAME), true,
-                    mShowOperatorNameObserver);
-        }
-
         addNavigationBar();
         // must be after addNavigationBar
         mOmniSettingsObserver.observe();
@@ -989,9 +947,6 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
         mPixelFormat = PixelFormat.OPAQUE;
 
         mLabel = (TextView)mStatusBarView.findViewById(R.id.custom_label);
-        if (mContext.getResources().getBoolean(R.bool.enable_operator_name)) {
-            mCarrierText = mStatusBarView.findViewById(R.id.status_carrier_text);
-        }
 
         mStackScroller = (NotificationStackScrollLayout) mStatusBarWindow.findViewById(
                 R.id.notification_stack_scroller);
@@ -1789,15 +1744,6 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
 
         updateNotificationShade();
         mIconController.updateNotificationIcons(mNotificationData);
-
-        if (mContext.getResources().getBoolean(R.bool.enable_operator_name)
-                && mCarrierText != null) {
-            if (mState == StatusBarState.KEYGUARD || mState == StatusBarState.SHADE_LOCKED) {
-                mCarrierText.setVisibility(View.GONE);
-            } else {
-                mCarrierText.setVisibility(View.VISIBLE);
-            }
-        }
     }
 
     @Override
@@ -4261,23 +4207,6 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
         mGroupManager.setStatusBarState(state);
         mStatusBarWindowManager.setStatusBarState(state);
         updateDozing();
-
-        final TelephonyManager tm = (TelephonyManager)mContext.getSystemService(Context.
-                TELEPHONY_SERVICE);
-        boolean showOperatorName = (0 != Settings.System.getInt(
-                mContext.getContentResolver(), SHOW_OPERATOR_NAME, 1));
-        final boolean enableOperatorName = (mContext.getResources().
-                getBoolean(com.android.internal.R.bool.config_showOperatorNameInStatusBar));
-
-        TextView networkLabel = (TextView)mStatusBarWindow.findViewById(R.id.network_label);
-        if (networkLabel != null) {
-            if (!enableOperatorName || !showOperatorName || mState != StatusBarState.SHADE) {
-                mNetworkController.removeNetworkLabelView();
-                networkLabel.setVisibility(View.GONE);
-            } else {
-                mNetworkController.addNetworkLabelView(networkLabel);
-            }
-        }
     }
 
     @Override

@@ -23,7 +23,6 @@ import android.graphics.PorterDuff;
 import android.graphics.drawable.Animatable;
 import android.graphics.drawable.Drawable;
 import android.telephony.SubscriptionInfo;
-import android.telephony.TelephonyManager;
 import android.util.ArraySet;
 import android.util.AttributeSet;
 import android.util.Log;
@@ -491,7 +490,7 @@ public class SignalClusterView
         private String mMobileDescription, mMobileTypeDescription;
 
         private ViewGroup mMobileGroup;
-        private ImageView mMobile, mMobileDark, mMobileType, mRoaming;
+        private ImageView mMobile, mMobileDark, mMobileType;
 
         public PhoneState(int subId, Context context) {
             ViewGroup root = (ViewGroup) LayoutInflater.from(context)
@@ -505,18 +504,6 @@ public class SignalClusterView
             mMobile         = (ImageView) root.findViewById(R.id.mobile_signal);
             mMobileDark     = (ImageView) root.findViewById(R.id.mobile_signal_dark);
             mMobileType     = (ImageView) root.findViewById(R.id.mobile_type);
-<<<<<<< HEAD
-=======
-            mMobileActivity = (ImageView) root.findViewById(R.id.mobile_inout);
-
-            mDataActivity   = (ImageView) root.findViewById(R.id.data_inout);
-            mStackedData    = (ImageView) root.findViewById(R.id.mobile_signal_data);
-            mStackedVoice   = (ImageView) root.findViewById(R.id.mobile_signal_voice);
-
-            mMobileSingleGroup = (ViewGroup) root.findViewById(R.id.mobile_signal_single);
-            mMobileStackedGroup = (ViewGroup) root.findViewById(R.id.mobile_signal_stacked);
-            mRoaming        = (ImageView) root.findViewById(R.id.mobile_roaming);
->>>>>>> 768677bb9282abcfeea3ae88064397bbe846ccf6
         }
 
         public boolean apply(boolean isSecondaryIcon) {
@@ -540,48 +527,6 @@ public class SignalClusterView
                 }
 
                 mMobileType.setImageResource(mMobileTypeId);
-<<<<<<< HEAD
-=======
-
-                mDataActivity.setImageResource(mDataActivityId);
-                Drawable dataActivityDrawable = mDataActivity.getDrawable();
-                if (dataActivityDrawable instanceof Animatable) {
-                    Animatable ad = (Animatable) dataActivityDrawable;
-                    if (!ad.isRunning()) {
-                        ad.start();
-                    }
-                }
-
-                mMobileActivity.setImageResource(mMobileActivityId);
-                Drawable mobileActivityDrawable = mMobileActivity.getDrawable();
-                if (mobileActivityDrawable instanceof Animatable) {
-                    Animatable ad = (Animatable) mobileActivityDrawable;
-                    if (!ad.isRunning()) {
-                        ad.start();
-                    }
-                }
-
-                if (mStackedDataId != 0 && mStackedVoiceId != 0) {
-                    mStackedData.setImageResource(mStackedDataId);
-                    mStackedVoice.setImageResource(mStackedVoiceId);
-                    mMobileSingleGroup.setVisibility(View.GONE);
-                    mMobileStackedGroup.setVisibility(View.VISIBLE);
-                } else {
-                    mStackedData.setImageResource(0);
-                    mStackedVoice.setImageResource(0);
-                    mMobileSingleGroup.setVisibility(View.VISIBLE);
-                    mMobileStackedGroup.setVisibility(View.GONE);
-                }
-
-                TelephonyManager tm =
-                        (TelephonyManager) mContext.getSystemService(Context.TELEPHONY_SERVICE);
-                if (tm != null && tm.isNetworkRoaming(mSubId)) {
-                    mRoaming.setImageDrawable(getContext().getResources().getDrawable(
-                                R.drawable.stat_sys_data_fully_connected_roam));
-                } else {
-                    mRoaming.setImageDrawable(null);
-                }
->>>>>>> 768677bb9282abcfeea3ae88064397bbe846ccf6
                 mMobileGroup.setContentDescription(mMobileTypeDescription
                         + " " + mMobileDescription);
                 mMobileGroup.setVisibility(View.VISIBLE);

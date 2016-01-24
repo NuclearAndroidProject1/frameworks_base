@@ -124,8 +124,6 @@ public class AccessPoint implements Comparable<AccessPoint> {
 
     private Object mTag;
 
-    public boolean foundInScanResult = false;
-
     public AccessPoint(Context context, Bundle savedState) {
         mContext = context;
         mConfig = savedState.getParcelable(KEY_CONFIG);

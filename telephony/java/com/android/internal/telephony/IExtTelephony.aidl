@@ -116,11 +116,4 @@ interface IExtTelephony {
     * @return phone id
     */
     int getPhoneIdForECall();
-
-    /**
-    * Check is FDN is enabled or not.
-    * @param - void
-    * @return true or false
-    */
-    boolean isFdnEnabled();
 }
