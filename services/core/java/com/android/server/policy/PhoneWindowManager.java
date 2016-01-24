@@ -696,7 +696,6 @@ public class PhoneWindowManager implements WindowManagerPolicy {
     boolean mHavePendingMediaKeyRepeatWithWakeLock;
 
     private int mCurrentUserId;
-    private boolean haveEnableGesture = false;
 
     // Maps global key codes to the components that will handle them.
     private GlobalKeyManager mGlobalKeyManager;
@@ -739,8 +738,6 @@ public class PhoneWindowManager implements WindowManagerPolicy {
     private static final int MSG_POWER_DELAYED_PRESS = 13;
     private static final int MSG_POWER_LONG_PRESS = 14;
     private static final int MSG_UPDATE_DREAMING_SLEEP_TOKEN = 15;
-
-
     boolean mWifiDisplayConnected = false;
     int mWifiDisplayCustomRotation = -1;
 
@@ -897,9 +894,6 @@ public class PhoneWindowManager implements WindowManagerPolicy {
             resolver.registerContentObserver(Settings.System.getUriFor(
                     Settings.System.NAVIGATION_BAR_HEIGHT), false, this,
                     UserHandle.USER_ALL);
-            resolver.registerContentObserver(Settings.System.getUriFor(
-                    Settings.System.THREE_FINGER_GESTURE), false, this,
-                    UserHandle.USER_ALL);
             updateSettings();
         }
 
@@ -960,7 +954,6 @@ public class PhoneWindowManager implements WindowManagerPolicy {
     private ImmersiveModeConfirmation mImmersiveModeConfirmation;
 
     private SystemGesturesPointerEventListener mSystemGestures;
-    private OPGesturesListener mOPGestures;
 
     IStatusBarService getStatusBarService() {
         synchronized (mServiceAquireLock) {
@@ -1611,13 +1604,6 @@ public class PhoneWindowManager implements WindowManagerPolicy {
         mPowerManagerInternal = LocalServices.getService(PowerManagerInternal.class);
         mAppOpsManager = (AppOpsManager) mContext.getSystemService(Context.APP_OPS_SERVICE);
 
-        mOPGestures = new OPGesturesListener(context, new OPGesturesListener.Callbacks() {
-                   @Override
-                    public void onSwipeThreeFinger() {
-                        mHandler.post(mScreenshotRunnable);
-                    }
-                });
-
         // Init display burn-in protection
         boolean burnInProtectionEnabled = context.getResources().getBoolean(
                 com.android.internal.R.bool.config_enableBurnInProtection);
@@ -1896,18 +1882,6 @@ public class PhoneWindowManager implements WindowManagerPolicy {
         mAudioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
     }
 
-    private void enableSwipeThreeFingerGesture(boolean enable){
-        if (enable) {
-            if (haveEnableGesture) return;
-            haveEnableGesture = true;
-            mWindowManagerFuncs.registerPointerEventListener(mOPGestures);
-        } else {
-       if (!haveEnableGesture) return;
-            haveEnableGesture = false;
-            mWindowManagerFuncs.unregisterPointerEventListener(mOPGestures);
-        }
-    }
-
     private void updateKeyAssignments() {
         final boolean hasMenu = (mDeviceHardwareKeys & KEY_MASK_MENU) != 0;
         final boolean hasBack = (mDeviceHardwareKeys & KEY_MASK_BACK) != 0;
@@ -2024,7 +1998,8 @@ public class PhoneWindowManager implements WindowManagerPolicy {
             return;
         }
         mDisplay = display;
-
+        mPanelOrientation =
+            SystemProperties.getInt("persist.panel.orientation", 0) / 90;
         final Resources res = mContext.getResources();
         int shortSize, longSize;
         if (width > height) {
@@ -2207,12 +2182,6 @@ public class PhoneWindowManager implements WindowManagerPolicy {
 
             mUserRotationAngles = Settings.System.getInt(resolver,
                     Settings.System.ACCELEROMETER_ROTATION_ANGLES, -1);
-
-            //Three Finger Gesture
-            boolean threeFingerGesture = Settings.System.getIntForUser(resolver,
-                    Settings.System.THREE_FINGER_GESTURE, 0, UserHandle.USER_CURRENT) == 1;
-            enableSwipeThreeFingerGesture(threeFingerGesture);
-
 
             if (mSystemReady) {
                 int pointerLocation = Settings.System.getIntForUser(resolver,
@@ -3136,6 +3105,19 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                     + repeatCount + " keyguardOn=" + keyguardOn + " mHomePressed=" + mHomePressed
                     + " canceled=" + canceled + " virtualKey=" + virtualKey + " scanCode=" + scanCode
                     + " longPress=" + longPress);
+        }
+
+        // If the boot mode is power off alarm, we should not dispatch the several physical keys
+        // in power off alarm UI to avoid pausing power off alarm UI.
+        int isPowerOffAlarmMode = Settings.System.getInt(mContext.getContentResolver(),
+                Settings.System.POWER_OFF_ALARM_MODE, 0);
+        if (DEBUG_INPUT) { Log.d(TAG, "intercept Dispatching isPowerOffAlarmMode = " +
+                isPowerOffAlarmMode); }
+
+        if (isPowerOffAlarmMode == 1 && (keyCode == KeyEvent.KEYCODE_HOME
+                || keyCode == KeyEvent.KEYCODE_SEARCH
+                || keyCode == KeyEvent.KEYCODE_MENU)) {
+            return -1;  // ignore the physical key here
         }
 
         // If the boot mode is power off alarm, we should not dispatch the several physical keys
@@ -5675,6 +5657,18 @@ public class PhoneWindowManager implements WindowManagerPolicy {
             }
         }
 
+        // Specific device key handling
+        if (mDeviceKeyHandler != null) {
+            try {
+                // The device only should consume known keys.
+                if (mDeviceKeyHandler.handleKeyEvent(event)) {
+                    return 0;
+                }
+            } catch (Exception e) {
+                Slog.w(TAG, "Could not dispatch event to device key handler", e);
+            }
+        }
+
         // Handle special keys.
         switch (keyCode) {
             case KeyEvent.KEYCODE_VOLUME_DOWN:
@@ -6738,7 +6732,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                     if (preferredRotation >= 0) {
                         return preferredRotation;
                     }
-                    return Surface.ROTATION_0;
+                    return mPanelOrientation;
             }
         }
     }
@@ -6945,7 +6939,6 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                         mBootMsgDialog.setTitle(R.string.android_start_title);
                     }
                     mBootMsgDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
-                    mBootMsgDialog.setIcon(com.android.internal.R.drawable.boot_logo);
                     mBootMsgDialog.setIndeterminate(true);
                     mBootMsgDialog.getWindow().setType(
                             WindowManager.LayoutParams.TYPE_BOOT_PROGRESS);
@@ -6967,7 +6960,7 @@ public class PhoneWindowManager implements WindowManagerPolicy {
                     Random rand = new Random();
                     String randomColor = Integer.toHexString(rand.nextInt(0xFFFFFF) & 0xFCFCFC );
                     mBootMsgDialog.setMessage(Html.fromHtml(msg +
-                                                            "<br><b><font color=\"#FF0000" + "\">" +
+                                                            "<br><b><font color=\"#" + randomColor + "\">" +
                                                             currentPackageName +
                                                             "</font></b>"));
                 } else {
@@ -7093,14 +7086,9 @@ public class PhoneWindowManager implements WindowManagerPolicy {
 
     private void applyLidSwitchState() {
         if (mLidState == LID_CLOSED && mLidControlsSleep) {
-            TelecomManager telephonyService = getTelecommService();
-            if (!(telephonyService == null
-                    || telephonyService.isRinging())) {
-                mPowerManager.goToSleep(SystemClock.uptimeMillis(),
-                        PowerManager.GO_TO_SLEEP_REASON_LID_SWITCH,
-                        PowerManager.GO_TO_SLEEP_FLAG_NO_DOZE);
-            }
-
+            mPowerManager.goToSleep(SystemClock.uptimeMillis(),
+                    PowerManager.GO_TO_SLEEP_REASON_LID_SWITCH,
+                    PowerManager.GO_TO_SLEEP_FLAG_NO_DOZE);
         }
 
         synchronized (mLock) {

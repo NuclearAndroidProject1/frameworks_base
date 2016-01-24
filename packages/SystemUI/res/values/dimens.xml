@@ -484,7 +484,7 @@
     <dimen name="keyguard_affordance_icon_height">24dp</dimen>
     <dimen name="keyguard_affordance_icon_width">24dp</dimen>
 
-    <dimen name="keyguard_indication_margin_bottom">90dp</dimen>
+    <dimen name="keyguard_indication_margin_bottom">65dp</dimen>
 
     <!-- The text size for battery level -->
     <dimen name="battery_level_text_size">12sp</dimen>
@@ -587,10 +587,4 @@
 
     <!-- Thickness of the shadows of the assist disclosure beams -->
     <dimen name="assist_disclosure_shadow_thickness">1.5dp</dimen>
-
-    <!-- Network traffic monitor single-line text size -->
-    <dimen name="net_traffic_single_text_size">12dp</dimen>
-
-    <!-- Network traffic monitor multi-line text size -->
-    <dimen name="net_traffic_multi_text_size">9dp</dimen>
 </resources>

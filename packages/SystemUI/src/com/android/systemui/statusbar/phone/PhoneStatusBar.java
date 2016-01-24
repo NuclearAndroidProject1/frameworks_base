@@ -19,8 +19,6 @@ package com.android.systemui.statusbar.phone;
 
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
-import android.annotation.ChaosLab;
-import android.annotation.ChaosLab.Classification;
 import android.annotation.NonNull;
 import android.app.ActivityManager;
 import android.app.ActivityManagerNative;
@@ -45,7 +43,6 @@ import android.database.ContentObserver;
 import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.ColorFilter;
-import android.graphics.PorterDuff.Mode;
 import android.graphics.PixelFormat;
 import android.graphics.Point;
 import android.graphics.PointF;
@@ -55,7 +52,6 @@ import android.graphics.Rect;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.inputmethodservice.InputMethodService;
-import android.net.Uri;
 import android.media.AudioAttributes;
 import android.media.MediaMetadata;
 import android.media.session.MediaController;
@@ -100,6 +96,7 @@ import android.view.WindowManagerGlobal;
 import android.view.ViewConfiguration;
 import android.view.ViewGroup;
 import android.view.ViewGroup.LayoutParams;
+import android.view.ViewGroup.MarginLayoutParams;
 import android.view.ViewStub;
 import android.view.WindowManager;
 import android.view.WindowManagerGlobal;
@@ -111,7 +108,6 @@ import android.view.animation.LinearInterpolator;
 import android.view.animation.PathInterpolator;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -123,7 +119,6 @@ import com.android.keyguard.KeyguardUpdateMonitor;
 import com.android.keyguard.KeyguardUpdateMonitorCallback;
 import com.android.keyguard.ViewMediatorCallback;
 import com.android.systemui.BatteryMeterView;
-import com.android.systemui.BatteryLevelTextView;
 import com.android.systemui.DemoMode;
 import com.android.systemui.EventLogConstants;
 import com.android.systemui.EventLogTags;
@@ -176,7 +171,6 @@ import com.android.systemui.statusbar.policy.SecurityControllerImpl;
 import com.android.systemui.statusbar.policy.UserInfoController;
 import com.android.systemui.statusbar.policy.UserSwitcherController;
 import com.android.systemui.statusbar.policy.ZenModeController;
-import com.android.systemui.statusbar.policy.Clock;
 import com.android.systemui.statusbar.stack.NotificationStackScrollLayout;
 import com.android.systemui.statusbar.stack.NotificationStackScrollLayout.OnChildLocationsChangedListener;
 import com.android.systemui.statusbar.stack.StackStateAnimator;
@@ -268,13 +262,6 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
     /** Allow some time inbetween the long press for back and recents. */
     private static final int LOCK_TO_APP_GESTURE_TOLERENCE = 200;
 
-    /**
-     * A key that is used to retrieve the value of the checkbox
-     * in Settings application that allows a user to add or remove
-     * the operator name in statusbar.
-     */
-    protected static final String SHOW_OPERATOR_NAME = "show_network_name_mode";
-
     /** If true, the system is in the half-boot-to-decryption-screen state.
      * Prudently disable QS and notifications.  */
     private static final boolean ONLY_CORE_APPS;
@@ -329,34 +316,19 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
     private PointF mWakeUpTouchLocation;
     private boolean mScreenTurningOn;
     private PointF mScreenOnTouchLocation;
-    private BatteryMeterView mBatteryView;
-    private BatteryLevelTextView mBatteryTextView;
 
     int mPixelFormat;
     Object mQueueLock = new Object();
 
     StatusBarIconController mIconController;
 
-    private View mCarrierText = null;
-
     // expanded notifications
     NotificationPanelView mNotificationPanel; // the sliding/resizing panel within the notification window
     View mExpandedContents;
     TextView mNotificationPanelDebugText;
 
-    TextView mLabel;
-
     // settings
     private QSPanel mQSPanel;
-
-    String mGreeting = "";
-    private boolean mShowLabel;
-    private int mShowLabelTimeout;
-
-    // logo
-    private boolean mLogo;
-    private ImageView Logo;
-    private int mLogoColor;
 
     // top bar
     StatusBarHeaderView mHeader;
@@ -376,6 +348,9 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
 
     int mKeyguardMaxNotificationCount;
 
+    // carrier label
+    private TextView mCarrierLabel;
+    private boolean mShowCarrierInPanel = false;
     boolean mExpandedVisible;
 
     private int mNavigationBarWindowState = WINDOW_STATE_SHOWING;
@@ -451,31 +426,6 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
                     Settings.System.STATUS_BAR_BRIGHTNESS_CONTROL), false, this);
             resolver.registerContentObserver(Settings.System.getUriFor(
                     Settings.System.SCREEN_BRIGHTNESS_MODE), false, this);
-            resolver.registerContentObserver(Settings.System.getUriFor(
-                    Settings.System.STATUS_BAR_LOGO),
-                    false, this, UserHandle.USER_ALL);
-            resolver.registerContentObserver(Settings.System.getUriFor(
-                    Settings.System.STATUS_BAR_LOGO_COLOR),
-                    false, this, UserHandle.USER_ALL);
-            resolver.registerContentObserver(Settings.System.getUriFor(
-                    Settings.System.STATUS_BAR_GREETING),
-                    false, this, UserHandle.USER_ALL);
-            resolver.registerContentObserver(Settings.System.getUriFor(
-                    Settings.System.STATUS_BAR_GREETING_TIMEOUT),
-                    false, this, UserHandle.USER_ALL);
-            resolver.registerContentObserver(Settings.System.getUriFor(
-                    Settings.System.USE_SLIM_RECENTS), false, this,
-                    UserHandle.USER_ALL);
-            update();
-        }
-
-        @Override
-        public void onChange(boolean selfChange, Uri uri) {
-            if (uri.equals(Settings.System.getUriFor(
-                    Settings.System.USE_SLIM_RECENTS))) {
-                updateRecents();
-            }
-
             update();
         }
 
@@ -491,41 +441,8 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
                     Settings.System.SCREEN_BRIGHTNESS_MODE_AUTOMATIC;
             mBrightnessControl = !autoBrightness && Settings.System.getInt(
                     resolver, Settings.System.STATUS_BAR_BRIGHTNESS_CONTROL, 0) == 1;
-
-            mLogo = Settings.System.getIntForUser(resolver,
-                    Settings.System.STATUS_BAR_LOGO, 0, mCurrentUserId) == 1;
-            mLogoColor = Settings.System.getIntForUser(resolver,
-                    Settings.System.STATUS_BAR_LOGO_COLOR, 0xFFFFFFFF, mCurrentUserId);
-            showLogo(mLogo, mLogoColor);
-
-            mGreeting = Settings.System.getStringForUser(resolver,
-                    Settings.System.STATUS_BAR_GREETING,
-                    UserHandle.USER_CURRENT);
-            if (mGreeting != null && !TextUtils.isEmpty(mGreeting)) {
-                mLabel.setText(mGreeting);
-           }
-            mShowLabelTimeout = Settings.System.getIntForUser(resolver,
-                    Settings.System.STATUS_BAR_GREETING_TIMEOUT, 400, mCurrentUserId);
         }
     }
-
-    private final ContentObserver mShowOperatorNameObserver = new ContentObserver(new Handler()) {
-        @Override
-        public void onChange(boolean selfChange) {
-            boolean showOperatorName = (0 != Settings.System.getInt(
-                mContext.getContentResolver(), SHOW_OPERATOR_NAME, 1));
-            TextView networkLabel = (TextView)mStatusBarWindow.findViewById(R.id.network_label);
-            if (networkLabel != null) {
-                if (!showOperatorName || mState != StatusBarState.SHADE) {
-                    mNetworkController.removeNetworkLabelView();
-                    networkLabel.setVisibility(View.GONE);
-                } else {
-                    mNetworkController.addNetworkLabelView(networkLabel);
-                }
-            }
-        }
-    };
-
 
     // ensure quick settings is disabled until the current user makes it through the setup wizard
     private boolean mUserSetup = false;
@@ -835,22 +752,6 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
         // TODO: use MediaSessionManager.SessionListener to hook us up to future updates
         // in session state
 
-        // If the phone is configured to show the operator name
-        // then register the observer.
-        // Phones without simcard should not show
-        // operatorname in statusbar.
-        final TelephonyManager tm = (TelephonyManager)mContext.getSystemService(Context.
-                TELEPHONY_SERVICE);
-        final boolean enableOperatorName = (mContext.getResources().
-                getBoolean(com.android.internal.R.bool.config_showOperatorNameInStatusBar));
-        if (enableOperatorName) {
-            mContext.getContentResolver().unregisterContentObserver(mShowOperatorNameObserver);
-            mShowOperatorNameObserver.onChange(false); // setup
-            mContext.getContentResolver().registerContentObserver(
-                    Settings.System.getUriFor(SHOW_OPERATOR_NAME), true,
-                    mShowOperatorNameObserver);
-        }
-
         addNavigationBar();
         // must be after addNavigationBar
         mOmniSettingsObserver.observe();
@@ -892,7 +793,6 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
     // ================================================================================
     // Constructing the view
     // ================================================================================
-    @ChaosLab(name="GestureAnywhere", classification=Classification.CHANGE_CODE)
     protected PhoneStatusBarView makeStatusBarView() {
         final Context context = mContext;
 
@@ -950,8 +850,6 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
             mNotificationPanelDebugText.setVisibility(View.VISIBLE);
         }
 
-        addGestureAnywhereView();
-
         try {
             mShowNavBar = mWindowManagerService.hasNavigationBar();
             if (DEBUG) Log.v(TAG, "hasNavigationBar=" + mShowNavBar);
@@ -991,9 +889,6 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
         mPixelFormat = PixelFormat.OPAQUE;
 
         mLabel = (TextView)mStatusBarView.findViewById(R.id.custom_label);
-        if (mContext.getResources().getBoolean(R.bool.enable_operator_name)) {
-            mCarrierText = mStatusBarView.findViewById(R.id.status_carrier_text);
-        }
 
         mStackScroller = (NotificationStackScrollLayout) mStatusBarWindow.findViewById(
                 R.id.notification_stack_scroller);
@@ -1073,7 +968,7 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
         // Other icons
         mLocationController = new LocationControllerImpl(mContext,
                 mHandlerThread.getLooper()); // will post a notification
-        mBatteryController = new BatteryController(mContext, mHandler);
+        mBatteryController = new BatteryController(mContext);
         mBatteryController.addStateChangedCallback(new BatteryStateChangeCallback() {
             @Override
             public void onPowerSaveChanged() {
@@ -1085,10 +980,6 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
             }
             @Override
             public void onBatteryLevelChanged(int level, boolean pluggedIn, boolean charging) {
-                // noop
-            }
-            @Override
-            public void onBatteryStyleChanged(int style, int percentMode) {
                 // noop
             }
         });
@@ -1125,6 +1016,23 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
             mNetworkController.addEmergencyListener(mHeader);
         }
 
+        mCarrierLabel = (TextView)mStatusBarWindow.findViewById(R.id.carrier_label);
+        final boolean showCarrierLabel = mContext.getResources().getBoolean(
+                R.bool.config_showCarrierLabel);
+        mShowCarrierInPanel = showCarrierLabel && (mCarrierLabel != null);
+        if (DEBUG) Log.v(TAG, "carrierlabel=" + mCarrierLabel + " show=" + mShowCarrierInPanel);
+        if (mShowCarrierInPanel) {
+            mCarrierLabel.setVisibility(mShowCarrierInPanel ? View.VISIBLE : View.INVISIBLE);
+        }
+
+        // make sure carrier label is not covered by navigation bar
+        if (mCarrierLabel != null && mNavigationBarView != null) {
+            MarginLayoutParams mlp = (MarginLayoutParams) mCarrierLabel.getLayoutParams();
+            if (mlp != null && mlp.bottomMargin < mNavigationBarView.mBarSize) {
+                mlp.bottomMargin = mNavigationBarView.mBarSize;
+                mCarrierLabel.setLayoutParams(mlp);
+            }
+        }
         mFlashlightController = new FlashlightController(mContext);
         mKeyguardBottomArea.setFlashlightController(mFlashlightController);
         mKeyguardBottomArea.setPhoneStatusBar(this);
@@ -1171,12 +1079,8 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
         mUserInfoController.reloadUserInfo();
 
         mHeader.setBatteryController(mBatteryController);
-       BatteryMeterView batteryMeterView =
-                ((BatteryMeterView) mStatusBarView.findViewById(R.id.battery));
-        batteryMeterView.setBatteryController(mBatteryController);
-        batteryMeterView.setAnimationsEnabled(false);
-        ((BatteryLevelTextView) mStatusBarView.findViewById(R.id.battery_level_text))
-                .setBatteryController(mBatteryController);
+        ((BatteryMeterView) mStatusBarView.findViewById(R.id.battery)).setBatteryController(
+                mBatteryController);
         mKeyguardStatusBar.setBatteryController(mBatteryController);
         mVisualizerView.setKeyguardMonitor(mKeyguardMonitor);
         mHeader.setNextAlarmController(mNextAlarmController);
@@ -1504,21 +1408,9 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
         }
         boolean isHeadsUped = mUseHeadsUp && shouldInterrupt(shadeEntry);
         if (isHeadsUped) {
-            // filter out alarms if required
-            if (notification.getNotification().category != null &&
-                    notification.getNotification().category.equals(Notification.CATEGORY_ALARM)) {
-                boolean fullscreenAlarm = Settings.System.getIntForUser(mContext.getContentResolver(),
-                        Settings.System.SHOW_ALARM_FULLSCREEN, 0, mCurrentUserId) == 1;
-                if (fullscreenAlarm) {
-                    if (DEBUG) Log.d(TAG, "launching alarm notification in fullscreen mode");
-                    isHeadsUped = false;
-                }
-            }
-            if (isHeadsUped) {
-                mHeadsUpManager.showNotification(shadeEntry);
-                // Mark as seen immediately
-                setNotificationShown(notification);
-            }
+            mHeadsUpManager.showNotification(shadeEntry);
+            // Mark as seen immediately
+            setNotificationShown(notification);
         }
 
         if (!isHeadsUped && notification.getNotification().fullScreenIntent != null) {
@@ -1803,21 +1695,27 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
 
         updateNotificationShade();
         mIconController.updateNotificationIcons(mNotificationData);
-
-        if (mContext.getResources().getBoolean(R.bool.enable_operator_name)
-                && mCarrierText != null) {
-            if (mState == StatusBarState.KEYGUARD || mState == StatusBarState.SHADE_LOCKED) {
-                mCarrierText.setVisibility(View.GONE);
-            } else {
-                mCarrierText.setVisibility(View.VISIBLE);
-            }
-        }
     }
 
     @Override
     protected void updateRowStates() {
         super.updateRowStates();
         mNotificationPanel.notifyVisibleChildrenChanged();
+    }
+
+    protected void updateCarrierLabelVisibility() {
+        if (!mShowCarrierInPanel) return;
+
+        final boolean makeVisible = mStackScroller.getVisibility() == View.VISIBLE
+                && mState != StatusBarState.KEYGUARD;
+
+        if ((mCarrierLabel.getVisibility() == View.VISIBLE) != makeVisible) {
+            if (DEBUG) {
+                Log.d(TAG, "making carrier label " + (makeVisible?"visible":"invisible"));
+            }
+
+            mCarrierLabel.setVisibility(makeVisible ? View.VISIBLE : View.INVISIBLE);
+        }
     }
 
     @Override
@@ -2174,8 +2072,8 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
     /**
      * State is one or more of the DISABLE constants from StatusBarManager.
      */
-    public void disable(int state1, int state2, final boolean animate) {
-        //animate &= mStatusBarWindowState != WINDOW_STATE_HIDDEN;
+    public void disable(int state1, int state2, boolean animate) {
+        animate &= mStatusBarWindowState != WINDOW_STATE_HIDDEN;
         mDisabledUnmodified1 = state1;
         mDisabledUnmodified2 = state2;
         state1 = adjustDisableFlags(state1);
@@ -2224,28 +2122,7 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
             if ((state1 & StatusBarManager.DISABLE_SYSTEM_INFO) != 0) {
                 mIconController.hideSystemIconArea(animate);
             } else {
-                if (mGreeting != null && !TextUtils.isEmpty(mGreeting) && mShowLabel) {
-                    if (animate) {
-                        mLabel.setVisibility(View.VISIBLE);
-                        mLabel.animate().cancel();
-                        mLabel.animate()
-                                .alpha(1f)
-                                .setDuration(mShowLabelTimeout)
-                                .setInterpolator(ALPHA_IN)
-                                .setStartDelay(50)
-                                .withEndAction(new Runnable() {
-                            @Override
-                            public void run() {
-                                labelAnimatorFadeOut(animate);
-                            }
-                        });
-                    } else {
-                        labelAnimatorFadeOut(animate);
-                    }
-                    mShowLabel = false;
-                } else {
-                    mIconController.showSystemIconArea(animate);
-               }
+                mIconController.showSystemIconArea(animate);
             }
         }
 
@@ -2290,22 +2167,6 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
         if ((diff2 & StatusBarManager.DISABLE2_QUICK_SETTINGS) != 0) {
             updateQsExpansionEnabled();
         }
-    }
-
-    protected void labelAnimatorFadeOut(final boolean animate) {
-        mLabel.animate().cancel();
-        mLabel.animate()
-                .alpha(0f)
-                .setDuration(200)
-                .setStartDelay(1200)
-                .setInterpolator(ALPHA_OUT)
-                .withEndAction(new Runnable() {
-            @Override
-            public void run() {
-                mLabel.setVisibility(View.GONE);
-                mIconController.showSystemIconArea(animate);
-            }
-        });
     }
 
     @Override
@@ -3403,7 +3264,6 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
             }
             else if (Intent.ACTION_SCREEN_OFF.equals(action)) {
                 mScreenOn = false;
-                mShowLabel = true;
                 notifyNavigationBarScreenOn(false);
                 notifyHeadsUpScreenOff();
                 finishBarAnimations();
@@ -3443,16 +3303,6 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
             }
         }
     };
-
-    public void showLogo(boolean show, int color) {
-        if (mStatusBarView == null) return;
-        ContentResolver resolver = mContext.getContentResolver();
-        Logo = (ImageView) mStatusBarView.findViewById(R.id.logo);
-        Logo.setColorFilter(color, Mode.SRC_IN);
-        if (Logo != null) {
-            Logo.setVisibility(show ? (mLogo ? View.VISIBLE : View.GONE) : View.GONE);
-        }
-    }
 
     private void resetUserExpandedStates() {
         ArrayList<Entry> activeNotifications = mNotificationData.getActiveNotifications();
@@ -3517,9 +3367,6 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
         }
         if (mSecurityController != null) {
             mSecurityController.onUserSwitched(mCurrentUserId);
-        }
-        if (mBatteryController != null) {
-            mBatteryController.setUserId(mCurrentUserId);
         }
     }
 
@@ -4147,6 +3994,7 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
         updateStackScrollerState(goingToFullShade);
         updateNotifications();
         checkBarModes();
+        updateCarrierLabelVisibility();
         updateMediaMetaData(false);
         mKeyguardMonitor.notifyKeyguardState(mStatusBarKeyguardViewManager.isShowing(),
                 mStatusBarKeyguardViewManager.isSecure());
@@ -4275,23 +4123,6 @@ public class PhoneStatusBar extends BaseStatusBar implements DemoMode,
         mGroupManager.setStatusBarState(state);
         mStatusBarWindowManager.setStatusBarState(state);
         updateDozing();
-
-        final TelephonyManager tm = (TelephonyManager)mContext.getSystemService(Context.
-                TELEPHONY_SERVICE);
-        boolean showOperatorName = (0 != Settings.System.getInt(
-                mContext.getContentResolver(), SHOW_OPERATOR_NAME, 1));
-        final boolean enableOperatorName = (mContext.getResources().
-                getBoolean(com.android.internal.R.bool.config_showOperatorNameInStatusBar));
-
-        TextView networkLabel = (TextView)mStatusBarWindow.findViewById(R.id.network_label);
-        if (networkLabel != null) {
-            if (!enableOperatorName || !showOperatorName || mState != StatusBarState.SHADE) {
-                mNetworkController.removeNetworkLabelView();
-                networkLabel.setVisibility(View.GONE);
-            } else {
-                mNetworkController.addNetworkLabelView(networkLabel);
-            }
-        }
     }
 
     @Override

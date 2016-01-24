@@ -183,11 +183,7 @@ public final class PowerManagerService extends SystemService
     private DreamManagerInternal mDreamManager;
     private Light mAttentionLight;
 
-    private TelephonyManager mTelephonyManager;
-
     private final Object mLock = new Object();
-
-    private TelephonyManager mTelephonyManager;
 
     // A bitfield that indicates what parts of the power state have
     // changed and need to be recalculated.

@@ -443,6 +443,7 @@ final class ProcessRecord {
                             + ",curProcState=" + curProcState + ",setProcState=" + setProcState
                             + ",killed=" + (killed ? 1 : 0) + ",killedByAm=" + (killedByAm ? 1 : 0)
                             + ",debugging=" + (debugging ? 1 : 0);
+        android.util.SeempLog.record_str(386, seempStr);
         if (thread == null) {
             final ProcessStats.ProcessState origBase = baseProcessTracker;
             if (origBase != null) {
@@ -480,6 +481,7 @@ final class ProcessRecord {
                             + ",curProcState=" + curProcState + ",setProcState=" + setProcState
                             + ",killed=" + (killed ? 1 : 0) + ",killedByAm=" + (killedByAm ? 1 : 0)
                             + ",debugging=" + (debugging ? 1 : 0);
+        android.util.SeempLog.record_str(387, seempStr);
         thread = null;
         final ProcessStats.ProcessState origBase = baseProcessTracker;
         if (origBase != null) {

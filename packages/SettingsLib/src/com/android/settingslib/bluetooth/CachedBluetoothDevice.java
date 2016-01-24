@@ -135,8 +135,6 @@ public final class CachedBluetoothDevice implements Comparable<CachedBluetoothDe
         if (newProfileState == BluetoothProfile.STATE_CONNECTED) {
             if (profile instanceof MapProfile) {
                 profile.setPreferred(mDevice, true);
-                mRemovedProfiles.remove(profile);
-                mProfiles.add(profile);
             } else if (!mProfiles.contains(profile)) {
                 mRemovedProfiles.remove(profile);
                 mProfiles.add(profile);
@@ -834,7 +832,12 @@ public final class CachedBluetoothDevice implements Comparable<CachedBluetoothDe
             // The pairing dialog now warns of phone-book access for paired devices.
             // No separate prompt is displayed after pairing.
             if (getPhonebookPermissionChoice() == CachedBluetoothDevice.ACCESS_UNKNOWN) {
-                setPhonebookPermissionChoice(CachedBluetoothDevice.ACCESS_ALLOWED);
+                if (mDevice.getBluetoothClass().getDeviceClass()
+                        == BluetoothClass.Device.AUDIO_VIDEO_HANDSFREE) {
+                    setPhonebookPermissionChoice(CachedBluetoothDevice.ACCESS_ALLOWED);
+                } else {
+                    setPhonebookPermissionChoice(CachedBluetoothDevice.ACCESS_REJECTED);
+                }
             }
         }
     }

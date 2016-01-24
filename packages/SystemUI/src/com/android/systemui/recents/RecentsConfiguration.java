@@ -21,8 +21,6 @@ import android.content.Context;
 import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.graphics.Rect;
-import android.net.Uri;
-import android.os.UserHandle;
 import android.provider.Settings;
 import android.util.DisplayMetrics;
 import android.view.animation.AnimationUtils;
@@ -114,9 +112,6 @@ public class RecentsConfiguration {
     /** Task bar size & animations */
     public int taskBarHeight;
     public int taskBarDismissDozeDelaySeconds;
-    public int taskBarEnterAnimDuration;
-    public int taskBarEnterAnimDelay;
-    public int taskBarExitAnimDuration;
 
     /** Nav bar scrim */
     public int navBarScrimEnterDuration;
@@ -207,9 +202,7 @@ public class RecentsConfiguration {
                 res.getInteger(R.integer.recents_filter_animate_new_views_duration);
 
         // Loading
-        maxNumTasksToLoad = Settings.System.getIntForUser(context.getContentResolver(),
-                Settings.System.RECENTS_MAX_APPS, ActivityManager.getMaxRecentTasksStatic(),
-                UserHandle.USER_CURRENT);
+        maxNumTasksToLoad = ActivityManager.getMaxRecentTasksStatic();
 
         // Search Bar
         searchBarSpaceHeightPx = res.getDimensionPixelSize(R.dimen.recents_search_bar_space_height);
@@ -266,12 +259,6 @@ public class RecentsConfiguration {
         taskBarHeight = res.getDimensionPixelSize(R.dimen.recents_task_bar_height);
         taskBarDismissDozeDelaySeconds =
                 res.getInteger(R.integer.recents_task_bar_dismiss_delay_seconds);
-        taskBarEnterAnimDuration =
-                res.getInteger(R.integer.recents_animate_task_bar_enter_duration);
-        taskBarEnterAnimDelay =
-                res.getInteger(R.integer.recents_animate_task_bar_enter_delay);
-        taskBarExitAnimDuration =
-                res.getInteger(R.integer.recents_animate_task_bar_exit_duration);
 
         // Nav bar scrim
         navBarScrimEnterDuration =

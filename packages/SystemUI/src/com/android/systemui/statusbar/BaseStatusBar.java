@@ -19,12 +19,8 @@ package com.android.systemui.statusbar;
 import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.animation.TimeInterpolator;
-import android.annotation.ChaosLab;
-import android.annotation.ChaosLab.Classification;
-import android.app.Activity;
 import android.app.ActivityManager;
 import android.app.ActivityManagerNative;
-import android.app.INotificationManager;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -44,7 +40,6 @@ import android.content.pm.UserInfo;
 import android.content.res.Configuration;
 import android.content.res.Resources;
 import android.database.ContentObserver;
-import android.graphics.PixelFormat;
 import android.graphics.PorterDuff;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.Icon;
@@ -72,14 +67,12 @@ import android.util.Slog;
 import android.util.SparseArray;
 import android.util.SparseBooleanArray;
 import android.view.Display;
-import android.view.Gravity;
 import android.view.IWindowManager;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewAnimationUtils;
 import android.view.ViewGroup;
-import android.view.ViewGroup.LayoutParams;
 import android.view.ViewParent;
 import android.view.WindowManager;
 import android.view.WindowManagerGlobal;
@@ -105,7 +98,6 @@ import com.android.systemui.SwipeHelper;
 import com.android.systemui.SystemUI;
 import com.android.systemui.assist.AssistManager;
 import com.android.systemui.recents.Recents;
-import com.android.systemui.slimrecent.RecentController;
 import com.android.systemui.statusbar.NotificationData.Entry;
 import com.android.systemui.statusbar.phone.NavigationBarView;
 import com.android.systemui.statusbar.phone.NotificationGroupManager;
@@ -113,7 +105,6 @@ import com.android.systemui.statusbar.phone.StatusBarKeyguardViewManager;
 import com.android.systemui.statusbar.policy.HeadsUpManager;
 import com.android.systemui.statusbar.policy.PreviewInflater;
 import com.android.systemui.statusbar.stack.NotificationStackScrollLayout;
-import com.android.systemui.chaos.lab.gestureanywhere.GestureAnywhereView;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -224,13 +215,8 @@ public abstract class BaseStatusBar extends SystemUI implements
     private boolean mDeviceProvisioned = false;
 
     private RecentsComponent mRecents;
-    private RecentController mSlimRecents;
-    private boolean mUseSlimRecents = false;
 
     protected int mZenMode;
-
-    @ChaosLab(name="GestureAnywhere", classification=Classification.NEW_FIELD)
-    protected GestureAnywhereView mGestureAnywhereView;
 
     // which notification is currently being longpress-examined by the user
     private NotificationGuts mNotificationGutsExposed;
@@ -251,7 +237,6 @@ public abstract class BaseStatusBar extends SystemUI implements
     private NotificationClicker mNotificationClicker = new NotificationClicker();
 
     protected AssistManager mAssistManager;
-    private INotificationManager mNoMan;
 
     @Override  // NotificationData.Environment
     public boolean isDeviceProvisioned() {
@@ -566,8 +551,6 @@ public abstract class BaseStatusBar extends SystemUI implements
         mDreamManager = IDreamManager.Stub.asInterface(
                 ServiceManager.checkService(DreamService.DREAM_SERVICE));
         mPowerManager = (PowerManager) mContext.getSystemService(Context.POWER_SERVICE);
-        mNoMan = (INotificationManager) INotificationManager.Stub.asInterface(
-                ServiceManager.getService(Context.NOTIFICATION_SERVICE));
 
         mContext.getContentResolver().registerContentObserver(
                 Settings.Global.getUriFor(Settings.Global.DEVICE_PROVISIONED), true,
@@ -589,6 +572,8 @@ public abstract class BaseStatusBar extends SystemUI implements
         mBarService = IStatusBarService.Stub.asInterface(
                 ServiceManager.getService(Context.STATUS_BAR_SERVICE));
 
+        mRecents = getComponent(Recents.class);
+        mRecents.setCallback(this);
 
         final Configuration currentConfig = mContext.getResources().getConfiguration();
         mLocale = currentConfig.locale;
@@ -601,8 +586,6 @@ public abstract class BaseStatusBar extends SystemUI implements
                 android.R.interpolator.linear_out_slow_in);
         mFastOutLinearIn = AnimationUtils.loadInterpolator(mContext,
                 android.R.interpolator.fast_out_linear_in);
-
-        updateRecents();
 
         // Connect in to the status bar manager service
         StatusBarIconList iconList = new StatusBarIconList();
@@ -1122,8 +1105,6 @@ public abstract class BaseStatusBar extends SystemUI implements
     protected void hideRecents(boolean triggeredFromAltTab, boolean triggeredFromHomeKey) {
         if (mRecents != null) {
             mRecents.hideRecents(triggeredFromAltTab, triggeredFromHomeKey);
-        } else if (mSlimRecents != null) {
-            mSlimRecents.hideRecents(triggeredFromHomeKey);
         }
     }
 
@@ -1131,25 +1112,18 @@ public abstract class BaseStatusBar extends SystemUI implements
         if (mRecents != null) {
             sendCloseSystemWindows(mContext, SYSTEM_DIALOG_REASON_RECENT_APPS);
             mRecents.toggleRecents(mDisplay, mLayoutDirection, getStatusBarView());
-        } else if (mSlimRecents != null) {
-            sendCloseSystemWindows(mContext, SYSTEM_DIALOG_REASON_RECENT_APPS);
-            mSlimRecents.toggleRecents(mDisplay, mLayoutDirection, getStatusBarView());
-         }
+        }
     }
 
     protected void preloadRecents() {
         if (mRecents != null) {
             mRecents.preloadRecents();
-        } else if (mSlimRecents != null) {
-            mSlimRecents.preloadRecentTasksList();
         }
     }
 
     protected void cancelPreloadingRecents() {
         if (mRecents != null) {
             mRecents.cancelPreloadingRecents();
-        } else if (mSlimRecents != null) {
-            mSlimRecents.cancelPreloadingRecentTasksList();
         }
     }
 
@@ -1168,27 +1142,6 @@ public abstract class BaseStatusBar extends SystemUI implements
     @Override
     public void onVisibilityChanged(boolean visible) {
         // Do nothing
-    }
-
-    protected void rebuildRecentsScreen() {
-        if (mSlimRecents != null) {
-            mSlimRecents.rebuildRecentsScreen();
-        }
-    }
-
-    protected void updateRecents() {
-        boolean slimRecents = Settings.System.getIntForUser(mContext.getContentResolver(),
-                Settings.System.USE_SLIM_RECENTS, 0, UserHandle.USER_CURRENT) == 1;
-        if (slimRecents) {
-            mSlimRecents = new RecentController(mContext, mLayoutDirection);
-            mSlimRecents.setCallback(this);
-            mRecents = null;
-        } else {
-            mRecents = getComponent(Recents.class);
-            mRecents.setCallback(this);
-            mSlimRecents = null;
-        }
-        rebuildRecentsScreen();
     }
 
     /**
@@ -1895,12 +1848,7 @@ public abstract class BaseStatusBar extends SystemUI implements
     }
 
     private boolean shouldShowOnKeyguard(StatusBarNotification sbn) {
-        boolean keyguard = true;
-        try {
-            keyguard = mNoMan.getPackageKeyguard(sbn.getPackageName(), sbn.getUid());
-        } catch (RemoteException e) {
-        }
-        return mShowLockscreenNotifications && !mNotificationData.isAmbient(sbn.getKey()) && keyguard;
+        return mShowLockscreenNotifications && !mNotificationData.isAmbient(sbn.getKey());
     }
 
     private void hideWeatherPanelIfNecessary(int visibleNotifications, int maxKeyguardNotifications) {
@@ -2265,39 +2213,5 @@ public abstract class BaseStatusBar extends SystemUI implements
         if (mAssistManager != null) {
             mAssistManager.startAssist(args);
         }
-    }
-
-    @ChaosLab(name="GestureAnywhere", classification=Classification.NEW_METHOD)
-    protected void addGestureAnywhereView() {
-        mGestureAnywhereView = (GestureAnywhereView)View.inflate(
-                mContext, R.layout.gesture_anywhere_overlay, null);
-        mWindowManager.addView(mGestureAnywhereView, getGestureAnywhereViewLayoutParams(Gravity.LEFT));
-        mGestureAnywhereView.setStatusBar(this);
-    }
-
-    @ChaosLab(name="GestureAnywhere", classification=Classification.NEW_METHOD)
-    protected void removeGestureAnywhereView() {
-        if (mGestureAnywhereView != null)
-            mWindowManager.removeView(mGestureAnywhereView);
-    }
-
-    @ChaosLab(name="GestureAnywhere", classification=Classification.NEW_METHOD)
-    protected WindowManager.LayoutParams getGestureAnywhereViewLayoutParams(int gravity) {
-        WindowManager.LayoutParams lp = new WindowManager.LayoutParams(
-                LayoutParams.WRAP_CONTENT,
-                ViewGroup.LayoutParams.MATCH_PARENT,
-                WindowManager.LayoutParams.TYPE_STATUS_BAR_SUB_PANEL,
-                0
-                | WindowManager.LayoutParams.FLAG_TOUCHABLE_WHEN_WAKING
-                | WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
-                | WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL
-                | WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH
-                | WindowManager.LayoutParams.FLAG_SPLIT_TOUCH,
-                PixelFormat.TRANSLUCENT);
-        lp.privateFlags |= WindowManager.LayoutParams.PRIVATE_FLAG_NO_MOVE_ANIMATION;
-        lp.gravity = Gravity.TOP | gravity;
-        lp.setTitle("GestureAnywhereView");
-
-        return lp;
     }
 }

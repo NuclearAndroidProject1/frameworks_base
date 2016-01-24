@@ -16,8 +16,6 @@
 
 package android.provider;
 
-import android.annotation.ChaosLab;
-import android.annotation.ChaosLab.Classification;
 import android.annotation.SdkConstant;
 import android.annotation.SdkConstant.SdkConstantType;
 import android.annotation.SystemApi;
@@ -2482,25 +2480,6 @@ public final class Settings {
         public static final String STATUS_BAR_BRIGHTNESS_CONTROL = "status_bar_brightness_control";
 
         /**
-         * Statusbar logo
-         * @hide
-         */
-        public static final String STATUS_BAR_LOGO = "status_bar_logo";
- 
-         /**
-         * Statusbar logo color setting
-         * @hide
-         */
-        public static final String STATUS_BAR_LOGO_COLOR = "status_bar_logo_color";
-
-        /**
-         * Select performance app. 1 = Kernel Adiutor, 2 = Synapse
-         *
-         * @hide
-         */
-        public static final String PERFORMANCE_APP = "performance_app";
-
-        /**
          * Control whether the process CPU usage meter should be shown.
          *
          * @deprecated Use {@link Global#SHOW_PROCESSES} instead
@@ -3666,13 +3645,6 @@ public final class Settings {
         public static final String KEY_APP_SWITCH_LONG_PRESS_ACTION = "key_app_switch_long_press_action";
 
         /**
-         * Should the alarm be shown in fullscreen instead of heads-up
-         *
-         * @hide
-        */
-        public static final String SHOW_ALARM_FULLSCREEN = "show_alarm_fullscreen";
-
-        /**
          *  Enable statusbar double tap gesture on to put device to sleep
          * @hide
          */
@@ -3698,6 +3670,13 @@ public final class Settings {
          * @hide
          */
         public static final String NAVIGATION_BAR_SHOW = "navigation_bar_show";
+
+        /**
+         * Toast icon
+         *
+         * @hide
+         */
+        public static final String TOAST_ICON = "toast_icon";
 
         /**
          * Whether to display recents in full screen
@@ -3756,441 +3735,6 @@ public final class Settings {
          */
         public static final String BUTTON_BACKLIGHT_TIMEOUT = "button_backlight_timeout";
 
-        /** Network traffic indicator, goes from least to greatest significant bitwise
-         * 0 = Display up-stream traffic if set
-         * 1 = Display down-stream traffic if set
-         * 2 = Show as Byte/s if set
-         * 16-31 = Refresh interval(ms) min: 250 max: 32750 default: 1000
-         * @hide
-        */
-        public static final String NETWORK_TRAFFIC_STATE = "network_traffic_state";
-
-        /**
-         * Whether or not to hide the network traffic indicator when there is no activity
-         * @hide
-        */
-        public static final String NETWORK_TRAFFIC_AUTOHIDE = "network_traffic_autohide";
-
-        /**
-         * Network traffic inactivity threshold (default is 10 kBs)
-         * @hide
-         */
-        public static final String NETWORK_TRAFFIC_AUTOHIDE_THRESHOLD = "network_traffic_autohide_threshold";
-
-        /**
-        * Network stats Color style
-         * @hide
-         */
-        public static final String NETWORK_TRAFFIC_COLOR = "network_traffic_color";
-
-        /**
-         * Whether to use gesture anywhere feature.
-         * @hide
-         */
-        @ChaosLab(name="GestureAnywhere", classification=Classification.NEW_FIELD)
-        public static final String GESTURE_ANYWHERE_ENABLED = "gesture_anywhere_enabled";
-
-        /**
-         * Position of gesture anywhere trigger.  Value is either Gravity.LEFT or Gravity.RIGHT
-         * @hide
-         */
-        @ChaosLab(name="GestureAnywhere", classification=Classification.NEW_FIELD)
-        public static final String GESTURE_ANYWHERE_POSITION = "gesture_anywhere_position";
-        /**
-         * Last time gestures were altered.
-         * Used to determine if gestures should be reloaded by the view.
-         * @hide
-         */
-        @ChaosLab(name="GestureAnywhere", classification=Classification.NEW_FIELD)
-        public static final String GESTURE_ANYWHERE_CHANGED = "gesture_anywhere_changed";
-
-        /**
-         * Width of the gesture anywhere trigger.
-         * @hide
-         */
-        @ChaosLab(name="GestureAnywhere", classification=Classification.NEW_FIELD)
-        public static final String GESTURE_ANYWHERE_TRIGGER_WIDTH = "gesture_anywhere_trigger_width";
-
-        /**
-         * Position of gesture anywhere trigger.
-         * @hide
-         */
-        @ChaosLab(name="GestureAnywhere", classification=Classification.NEW_FIELD)
-        public static final String GESTURE_ANYWHERE_TRIGGER_TOP = "gesture_anywhere_trigger_top";
-
-        /**
-         * Height of the gesture anywhere trigger.
-         * @hide
-         */
-        @ChaosLab(name="GestureAnywhere", classification=Classification.NEW_FIELD)
-        public static final String GESTURE_ANYWHERE_TRIGGER_HEIGHT = "gesture_anywhere_trigger_height";
-
-        /**
-         * Whether to display the gesture anywhere trigger region or not.
-         * Used internally for showing the trigger in settings so user can see its placement
-         * @hide
-         */
-        @ChaosLab(name="GestureAnywhere", classification=Classification.NEW_FIELD)
-        public static final String GESTURE_ANYWHERE_SHOW_TRIGGER = "gesture_anywhere_show_trigger";
-
-        /**
-         * Show or hide clock
-         * 0 - hide
-         * 1 - show (default)
-         * @hide
-         */
-        public static final String STATUS_BAR_CLOCK = "status_bar_clock";
-
-        /**
-         * AM/PM Style for clock options
-         * 0 - Normal AM/PM
-         * 1 - Small AM/PM
-         * 2 - No AM/PM
-         * @hide
-         */
-        public static final String STATUSBAR_CLOCK_AM_PM_STYLE = "statusbar_clock_am_pm_style";
-
-        /**
-         * Style of clock
-         * 0 - Right Clock
-         * 1 - Center Clock
-         * 2 - Left Clock
-         * @hide
-         */
-        public static final String STATUSBAR_CLOCK_STYLE = "statusbar_clock_style";
-
-        /**
-         * Shows custom date before clock time
-         * 0 - No Date
-         * 1 - Small Date
-         * 2 - Normal Date
-         * @hide
-         */
-        public static final String STATUSBAR_CLOCK_DATE_DISPLAY = "statusbar_clock_date_display";
-
-        /**
-         * Sets the date string style
-         * 0 - Regular style
-         * 1 - Lowercase
-         * 2 - Uppercase
-         * @hide
-         */
-        public static final String STATUSBAR_CLOCK_DATE_STYLE = "statusbar_clock_date_style";
-
-        /**
-         * Stores the java DateFormat string for the date
-         * @hide
-         */
-        public static final String STATUSBAR_CLOCK_DATE_FORMAT = "statusbar_clock_date_format";
-
-        /**
-         * Status bar greeting
-         * @hide
-         */
-        public static final String STATUS_BAR_GREETING = "status_bar_greeting";
-
-         /**
-         * Status bar greeting timeout
-         * @hide
-         */
-        public static final String STATUS_BAR_GREETING_TIMEOUT = "status_bar_greeting_timeout";
-
-        /**
-         * Display style of the status bar battery information
-         * 0: Display the battery an icon in portrait mode
-         * 2: Display the battery as a circle
-         * 4: Hide the battery status information
-         * 5: Display the battery an icon in landscape mode
-         * 6: Display the battery as plain text
-         * default: 0
-         * @hide
-         */
-        public static final String STATUS_BAR_BATTERY_STYLE = "status_bar_battery_style";
-
-        /**
-         * Status bar battery %
-         * 0: Hide the battery percentage
-         * 1: Display the battery percentage inside the icon
-         * 2: Display the battery percentage next to the icon
-         * @hide
-         */
-        public static final String STATUS_BAR_SHOW_BATTERY_PERCENT = "status_bar_show_battery_percent";
-
-        /**
-         * show clear all recents button
-         *  @hide
-         */
-        public static final String SHOW_CLEAR_ALL_RECENTS = "show_clear_all_recents";
-
-        /**
-         * location of the clear all rectents button
-         * @hide
-         */
-        public static final String RECENTS_CLEAR_ALL_LOCATION = "recents_clear_all_location";
-        
-        /**
-         * show the membar in recents
-         *  @hide
-         */
-        public static final String SYSTEMUI_RECENTS_MEM_DISPLAY = "systemui_recents_mem_display";
-
-        /**
-         * Number of columns in Settings TeamNuclear
-         * @hide
-         */
-        public static final String COLUM_NUMBER = "colum_number";
-
-        /**
-         * Sound ScreenShot TeamNuclear
-         * @hide
-         */
-        public static final String SCREENSHOT_SOUNDS = "screenshot_sounds";
-
-        /**
-         * Should the alarm be shown in fullscreen instead of heads-up
-         *
-         * @hide
-         */
-        public static final String SHOW_ALARM_FULLSCREEN = "show_alarm_fullscreen";
-
-        /**  
-         * AOKP Custom System Animations
-         * @hide
-         */  
-        public static final String[] ACTIVITY_ANIMATION_CONTROLS = new String[] {  
-                "activity_open",
-                "activity_close",
-                "task_open",  
-                "task_close",  
-                "task_to_front",
-                "task_to_back",  
-                "wallpaper_open",  
-                "wallpaper_close",  
-                "wallpaper_intra_open",  
-                "wallpaper_intra_close",  
-        };  
-        public static final String ANIMATION_CONTROLS_DURATION = "animation_controls_duration";
-
-        /**
-         * Toast animations
-         *
-         * @hide
-         */
-        public static final String TOAST_ANIMATION = "toast_animation";
-
-        /**
-         * ListView Animations
-         * 0 == None
-         * 1 == Wave (Left)
-         * 2 == Wave (Right)
-         * 3 == Scale
-         * 4 == Alpha
-         * 5 == Stack (Top)
-         * 6 == Stack (Bottom)
-         * 7 == Translate (Left)
-         * 8 == Translate (Right)
-         * @hide
-         */
-        public static final String LISTVIEW_ANIMATION = "listview_animation";
-
-        /**
-         * ListView Interpolators
-         * 0 == None
-         * 1 == accelerate_interpolator
-         * 2 == decelerate_interpolator
-         * 3 == accelerate_decelerate_interpolator
-         * 4 == anticipate_interpolator
-         * 5 == overshoot_interpolator
-         * 6 == anticipate_overshoot_interpolator
-         * 7 == bounce_interpolator
-         * @hide
-         */
-        public static final String LISTVIEW_INTERPOLATOR = "listview_interpolator";
-
-
-         /**
-         * Toast icon
-         *
-         * @hide
-         */
-        public static final String TOAST_ICON = "toast_icon";
-
-        /**
-         * Whether to use the proximity sensor to turn the screen on/off during a call
-         * @hide
-         */
-        public static final String IN_CALL_PROXIMITY_SENSOR = "in_call_proximity_sensor";
-
-        /**
-         * Whether the proximity sensor will adjust call to speaker
-         * @hide
-         */
-        public static final String PROXIMITY_AUTO_SPEAKER = "proximity_auto_speaker";
-
-        /**
-         * Time delay to activate speaker after proximity sensor triggered
-         * @hide
-         */
-        public static final String PROXIMITY_AUTO_SPEAKER_DELAY = "proximity_auto_speaker_delay";
-
-        /**
-         * Whether the proximity sensor will adjust call to speaker,
-         * only while in call (not while ringing on outgoing call)
-         * @hide
-         */
-        public static final String PROXIMITY_AUTO_SPEAKER_INCALL_ONLY =
-                "proximity_auto_speaker_incall_only";
-
-        /**
-         * Whether to use slim recents
-         * @hide
-         */
-        public static final String USE_SLIM_RECENTS = "use_slim_recents";
-
-        /**
-         * Whether to only show actually running tasks
-         * @hide
-         */
-        public static final String RECENT_SHOW_RUNNING_TASKS = "show_running_tasks";
-
-        /**
-         * Amount of apps to show in recents
-         * @hide
-         */
-        public static final String RECENTS_MAX_APPS = "recents_max_apps";
-
-        /**
-         * Whether recent panel gravity is left or right (default = Gravity.RIGHT).
-         * @hide
-         */
-        public static final String RECENT_PANEL_GRAVITY = "recent_panel_gravity";
-
-        /**
-         * Size of recent panel view in percent (default = 100).
-         * @hide
-         */
-        public static final String RECENT_PANEL_SCALE_FACTOR = "recent_panel_scale_factor";
-
-        /**
-         * User favorite tasks for recent panel.
-         * @hide
-         */
-        public static final String RECENT_PANEL_FAVORITES = "recent_panel_favorites";
-
-        /**
-         * Recent panel expanded mode (auto = 0, always = 1, never = 2).
-         * default = 0.
-         *
-         * @hide
-         */
-        public static final String RECENT_PANEL_EXPANDED_MODE = "recent_panel_expanded_mode";
-
-        /**
-         * Recent panel: Show topmost task
-         *
-         * @hide
-         */
-        public static final String RECENT_PANEL_SHOW_TOPMOST = "recent_panel_show_topmost";
-
-        /**
-         * Recent app sidebar content
-         *
-         * @hide
-         */
-        public static final String RECENT_APP_SIDEBAR_CONTENT = "recent_app_sidebar_content";
-
-        /**
-         * Disable text labels for the slim recent app sidebar items
-         *
-         * @hide
-         */
-        public static final String RECENT_APP_SIDEBAR_DISABLE_LABELS = "recent_app_sidebar_disable_labels";
-
-        /**
-         * Slim recent app sidebar background color
-         *
-         * @hide
-         */
-        public static final String RECENT_APP_SIDEBAR_BG_COLOR = "recent_app_sidebar_bg_color";
-
-        /**
-         * Slim recent app sidebar text color
-         *
-         * @hide
-         */
-        public static final String RECENT_APP_SIDEBAR_TEXT_COLOR = "recent_app_sidebar_text_color";
-
-        /**
-         * Size of recent app sidebar in percent (default = 100).
-         *
-         * @hide
-         */
-        public static final String RECENT_APP_SIDEBAR_SCALE_FACTOR = "recent_app_sidebar_scale_factor";
-
-        /**
-         * Recent panel background color
-         *
-         * @hide
-         */
-        public static final String RECENT_PANEL_BG_COLOR = "recent_panel_bg_color";
-
-        /**
-         * Recent card background color
-         *
-         * @hide
-         */
-        public static final String RECENT_CARD_BG_COLOR = "recent_card_bg_color";
-
-        /**
-         * Recent card text color
-         *
-         * @hide
-         */
-        public static final String RECENT_CARD_TEXT_COLOR = "recent_card_text_color";
-
-        /**
-         * Defines the shortcuts to be shown on lockscreen
-         * Usage is like this: target:icon|target:icon|target:icon
-         * if :icon is not set, default application icon will be used
-         * @hide
-         */
-        public static final String LOCKSCREEN_SHORTCUTS = "lockscreen_shortcuts";
-
-
-        /**
-         * Whether shorcuts open with normal or longpress
-         * @hide
-         */
-        public static final String LOCKSCREEN_SHORTCUTS_LONGPRESS =
-                "lockscreen_shortcuts_longpress";
-
-        /**
-         * Three Finger Gesture from Oppo
-         *
-         * @hide
-         */
-        public static final String THREE_FINGER_GESTURE = "three_finger_gesture";
-
-        /**
-         * Whether the proximity sensor will adjust call to speaker
-         * @hide
-         */
-        public static final String PROXIMITY_AUTO_SPEAKER = "proximity_auto_speaker";
-
-        /**
-         * Time delay to activate speaker after proximity sensor triggered
-         * @hide
-         */
-        public static final String PROXIMITY_AUTO_SPEAKER_DELAY = "proximity_auto_speaker_delay";
-
-        /**
-         * Whether the proximity sensor will adjust call to speaker,
-         * only while in call (not while ringing on outgoing call)
-         * @hide
-         */
-        public static final String PROXIMITY_AUTO_SPEAKER_INCALL_ONLY =
-                "proximity_auto_speaker_incall_only";
-
         /**
          * Settings to backup. This is here so that it's in the same place as the settings
          * keys and easy to update.
@@ -4243,9 +3787,7 @@ public final class Settings {
             RINGTONE,
             LOCK_TO_APP_ENABLED,
             NOTIFICATION_SOUND,
-            WIFI_AUTO_CONNECT_TYPE,
-            STATUS_BAR_BATTERY_STYLE,
-            STATUS_BAR_SHOW_BATTERY_PERCENT,
+            WIFI_AUTO_CONNECT_TYPE
         };
 
         /**
@@ -4297,7 +3839,6 @@ public final class Settings {
             PUBLIC_SETTINGS.add(DTMF_TONE_WHEN_DIALING);
             PUBLIC_SETTINGS.add(SOUND_EFFECTS_ENABLED);
             PUBLIC_SETTINGS.add(HAPTIC_FEEDBACK_ENABLED);
-            PUBLIC_SETTINGS.add(SHOW_ALARM_FULLSCREEN);
             PUBLIC_SETTINGS.add(SHOW_WEB_SUGGESTIONS);
             PUBLIC_SETTINGS.add(POWER_OFF_ALARM_MODE);
         }
@@ -4453,15 +3994,6 @@ public final class Settings {
          * @hide
          */
         public static final String WHEN_TO_MAKE_WIFI_CALLS = "when_to_make_wifi_calls";
-
-        /**
-          * Settings to reset on user request. They will fall back to their default value (0).
-          *
-          * @hide
-          */
-         public static final String[] SETTINGS_TO_RESET = {
-            PERFORMANCE_APP
-         };
 
         // Settings moved to Settings.Secure
 
@@ -8478,12 +8010,6 @@ public final class Settings {
          * Control whether the process CPU usage meter should be shown.
          */
         public static final String SHOW_PROCESSES = "show_processes";
-
-        /**
-         * Control whether the process CPU info meter should be shown.
-         * @hide
-         */
-        public static final String SHOW_CPU = "show_cpu";
 
         /**
          * If 1 low power mode is enabled.
