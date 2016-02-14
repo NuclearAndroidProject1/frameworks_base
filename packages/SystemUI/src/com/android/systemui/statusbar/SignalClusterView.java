@@ -645,6 +645,7 @@ public class SignalClusterView
                 } else {
                     mRoaming.setImageDrawable(null);
                 }
+
                 mMobileGroup.setContentDescription(mMobileTypeDescription
                         + " " + mMobileDescription);
                 mMobileGroup.setVisibility(View.VISIBLE);

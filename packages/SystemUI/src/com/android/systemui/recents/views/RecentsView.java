@@ -373,8 +373,8 @@ public class RecentsView extends FrameLayout implements TaskStackView.TaskStackV
             mSearchBar.measure(
                     MeasureSpec.makeMeasureSpec(searchBarSpaceBounds.width(), MeasureSpec.EXACTLY),
                     MeasureSpec.makeMeasureSpec(searchBarSpaceBounds.height(), MeasureSpec.EXACTLY));
-        
-        int paddingSearchBar = searchBarSpaceBounds.height() + 25;
+
+            int paddingSearchBar = searchBarSpaceBounds.height() + 25;
 
             if (enableMemDisplay) {
                 if (!isLandscape) {

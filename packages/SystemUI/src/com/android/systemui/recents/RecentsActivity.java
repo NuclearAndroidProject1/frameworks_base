@@ -266,7 +266,7 @@ public class RecentsActivity extends Activity implements RecentsView.RecentsView
                 mEmptyView.setOnClickListener(null);
             }
 
-            findViewById(R.id.clear_recents).setVisibility(View.VISIBLE);
+             findViewById(R.id.clear_recents).setVisibility(View.VISIBLE);
 
             boolean showSearchBar = Settings.System.getInt(getContentResolver(),
                        Settings.System.RECENTS_SHOW_SEARCH_BAR, 1) == 1;
@@ -277,9 +277,7 @@ public class RecentsActivity extends Activity implements RecentsView.RecentsView
                 } else {
                     mRecentsView.setSearchBarVisibility(View.GONE);
                 }
-            
             findViewById(R.id.floating_action_button).setVisibility(View.VISIBLE);
-
             }
 
             // Update search bar space height

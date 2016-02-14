@@ -706,7 +706,6 @@ public class GestureOverlayView extends FrameLayout {
                     mIsFadingOut = false;
                     postDelayed(mFadingOut, mFadeOffset);
                 }
-
             } else {
                 cancelGesture(event);
 

@@ -1507,9 +1507,6 @@
   <public type="drawable" name="dialog_holo_dark_frame" id="0x010800b2" />
   <public type="drawable" name="dialog_holo_light_frame" id="0x010800b3" />
 
-  <!--Slim Slider layout -->
-  <public type="layout" name="slider_preference" id="0x01090018" />
-
   <public type="style" name="Theme.WithActionBar" id="0x01030069" />
   <public type="style" name="Theme.NoTitleBar.OverlayActionModes" id="0x0103006a" />
   <public type="style" name="Theme.Holo" id="0x0103006b" />

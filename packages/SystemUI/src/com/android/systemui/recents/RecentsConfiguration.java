@@ -266,7 +266,7 @@ public class RecentsConfiguration {
         taskBarHeight = res.getDimensionPixelSize(R.dimen.recents_task_bar_height);
         taskBarDismissDozeDelaySeconds =
                 res.getInteger(R.integer.recents_task_bar_dismiss_delay_seconds);
-        taskBarEnterAnimDuration =
+		taskBarEnterAnimDuration =
                 res.getInteger(R.integer.recents_animate_task_bar_enter_duration);
         taskBarEnterAnimDelay =
                 res.getInteger(R.integer.recents_animate_task_bar_enter_delay);

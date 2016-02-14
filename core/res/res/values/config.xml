@@ -2168,6 +2168,10 @@
     <!-- Package name providing WebView implementation. -->
     <string name="config_webViewPackageName" translatable="false">com.android.webview</string>
 
+    <!-- Package name providing alternate WebView implementation.
+          Fall back to config_webViewPackageName if not available. -->
+     <string name="config_alternateWebViewPackageName" translatable="false">com.google.android.webview</string>
+
     <!-- If EMS is not supported, framework breaks down EMS into single segment SMS
          and adds page info " x/y". This config is used to set which carrier doesn't
          support EMS and whether page info should be added at the beginning or the end.
@@ -2534,10 +2538,16 @@
     <bool name="config_regional_hotspot_show_maximum_connection_enable">false</bool>
     <bool name="config_regional_hotspot_show_broadcast_ssid_checkbox">false</bool>
     <bool name="config_regional_hotspot_show_notification_when_turn_on">false</bool>
+     <!-- Keypress Optimization -->
+    <bool name="config_enableKeypressOptimization">false</bool>
+    <integer-array name="keypress_param_value"/>
     <!-- Zero Balance redirect URL config -->
     <string name="operator_config_url" translatable="false"></string>
     <!-- Zero Balance ping URL config -->
     <string name="operator_ping_url" translatable="false"></string>
     <!-- Zero Balance feature enable config -->
     <bool name="config_zero_balance_operator">false</bool>
+    <!-- Support in Surfaceflinger for blur layers.
+         NOTE: This requires additional hardware-specific code. -->
+    <bool name="config_ui_blur_enabled">false</bool>
 </resources>

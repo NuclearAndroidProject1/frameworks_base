@@ -119,7 +119,7 @@
 
     <!-- The default tiles to display in QuickSettings -->
     <string name="quick_settings_tiles_default" translatable="false">
-        wifi,bt,inversion,dnd,cell,airplane,rotation,flashlight, headsup,location,cast,hotspot,lte,sync
+        wifi,bt,inversion,dnd,cell,airplane,rotation,flashlight,location,cast,hotspot,lte,sync,screen_timeout, headsup
     </string>
 
     <!-- The tiles to display in QuickSettings -->
@@ -138,6 +138,9 @@
     <!-- Should "4G" be shown instead of "LTE" when the network is NETWORK_TYPE_LTE? -->
     <bool name="config_show4GForLTE">true</bool>
 
+    <!-- Whether or not we also show rsrp level for LTE. -->
+    <bool name="config_showRsrpSignalLevelforLTE">false</bool>
+
     <!-- Whether or not we show carrier label in notification panel. -->
     <bool name="config_showCarrierLabel">false</bool>
 
@@ -154,7 +157,7 @@
            stacked, the upper one is to show 3G, and the lower one
            is to show 2G.
         2: Do not show data activity besides signal icon, instead,
-          it shows data activity within signal view.
+           it shows data activity within signal view.
         3: Show data activity with data type at the left side
            of signal icon, and do not show two stacked icon on
            one slot.
@@ -350,8 +353,5 @@
 
     <!-- Show roaming and network icons -->
     <bool name="show_roaming_and_network_icons">false</bool>
-
-    <!-- Show 4GLTE for LTE -->
-    <bool name="show_4glte_icon_for_lte">false</bool>
 </resources>
 

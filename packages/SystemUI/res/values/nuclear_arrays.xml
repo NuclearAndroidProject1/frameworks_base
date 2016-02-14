@@ -25,4 +25,15 @@
         <item>369</item><item>157</item>
         <item>369</item><item>0</item>
     </array>
+
+    <string-array name="qs_tile_columns_values" translatable="false">
+        <item>3</item>
+        <item>4</item>
+        <item>5</item>
+    </string-array>
+    <string-array name="qs_tile_columns_entries" translatable="false">
+        <item>@string/qs_tile_columns_three</item>
+        <item>@string/qs_tile_columns_four</item>
+        <item>@string/qs_tile_columns_five</item>
+    </string-array>
 </resources>
