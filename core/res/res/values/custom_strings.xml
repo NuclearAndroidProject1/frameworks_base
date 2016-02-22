@@ -23,7 +23,7 @@
     <string name="global_action_reboot_sub">System</string>
     <string name="global_action_reboot_recovery">Recovery</string>
     <string name="global_action_reboot_bootloader">Bootloader</string>
-    <string name="global_action_current_user">Current</string>
+    <string name="global_action_users">Users\u2026</string>
 
     <!-- advanced reboot to bootloader. -->
     <string name="reboot_to_bootloader_title">Reboot bootloader</string>
@@ -129,4 +129,5 @@
     <string name="dnd_mode_total_silence">Total silence</string>
     <string name="dnd_mode_alarms">Alarms only</string>
     <string name="dnd_mode_important">Priority only</string>
+    <string name="global_action_current_user">Current</string>
 </resources>
