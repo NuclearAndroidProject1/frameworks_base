@@ -4214,6 +4214,12 @@ public final class Settings {
          */
         public static final String GLOBAL_ACTIONS_LIST = "global_actions_list";
 
+         /**
+         * Whether to show switches for wifi/cell/bt in the settings dashboard
+         * @hide
+         */
+        public static final String DASHBOARD_SWITCHES = "dashboard_switches";
+
         /**
          * Settings to backup. This is here so that it's in the same place as the settings
          * keys and easy to update.
