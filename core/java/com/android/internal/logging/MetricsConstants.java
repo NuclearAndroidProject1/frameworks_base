@@ -264,6 +264,7 @@ public interface MetricsConstants {
     public static final int TUNER_BATTERY_PERCENTAGE = 237;
     public static final int FUELGAUGE_INACTIVE_APPS = 238;
     public static final int QS_HEADSUP = 239;
+    public static final int NUCLEARTWEAKS = 240;
 
     //Notification Drawer	
     public static final int NOTIFICATION_DRAWER_SETTINGS = 247;
